@@ -37,19 +37,21 @@ export const Menu = {
   getCustomizations() {
     const options = db.prepare('SELECT * FROM customization_options ORDER BY type, name').all();
 
-    // Group by type
-    const grouped = {
-      size: [],
-      milk: [],
-      extra: []
-    };
-
+    const grouped = { size: [], milk: [], extra: [] };
     options.forEach(opt => {
-      if (grouped[opt.type]) {
-        grouped[opt.type].push(opt);
-      }
+      if (grouped[opt.type]) grouped[opt.type].push(opt);
     });
-
     return grouped;
+  },
+
+  createCustomization(type, name) {
+    const result = db.prepare(
+      'INSERT INTO customization_options (type, name) VALUES (?, ?)'
+    ).run(type, name);
+    return result.lastInsertRowid;
+  },
+
+  deleteCustomization(id) {
+    return db.prepare('DELETE FROM customization_options WHERE id = ?').run(id);
   }
 };

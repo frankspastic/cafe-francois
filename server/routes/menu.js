@@ -23,6 +23,27 @@ router.get('/customizations', (req, res) => {
   }
 });
 
+// Create customization option
+router.post('/customizations', (req, res) => {
+  try {
+    const { type, name } = req.body;
+    const id = Menu.createCustomization(type, name);
+    res.status(201).json({ id, type, name });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete customization option
+router.delete('/customizations/:id', (req, res) => {
+  try {
+    Menu.deleteCustomization(req.params.id);
+    res.json({ message: 'Customization option deleted' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get menu item by ID
 router.get('/:id', (req, res) => {
   try {

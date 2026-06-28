@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { menuAPI } from '../../services/api';
+import CustomizationManagement from './CustomizationManagement';
 
 function MenuManagement() {
   const [menuItems, setMenuItems] = useState([]);
@@ -193,6 +194,8 @@ function MenuManagement() {
           ))}
         </div>
       )}
+
+      <CustomizationManagement />
     </div>
   );
 }

@@ -35,6 +35,22 @@ export const menuAPI = {
       method: 'DELETE'
     });
     return response.json();
+  },
+
+  async createCustomization(type, name) {
+    const response = await fetch(`${API_BASE}/menu/customizations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, name })
+    });
+    return response.json();
+  },
+
+  async deleteCustomization(id) {
+    const response = await fetch(`${API_BASE}/menu/customizations/${id}`, {
+      method: 'DELETE'
+    });
+    return response.json();
   }
 };
 
