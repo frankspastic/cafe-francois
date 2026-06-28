@@ -1,4 +1,13 @@
+import { useState } from 'react';
+
 function MenuScreen({ menuItems, cart, onSelectItem, onGoToCart }) {
+  const categories = ['All', ...new Set(menuItems.map(i => i.category).filter(Boolean))];
+  const [selectedCategory, setSelectedCategory] = useState('All');
+
+  const visibleItems = selectedCategory === 'All'
+    ? menuItems
+    : menuItems.filter(i => i.category === selectedCategory);
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -17,12 +26,31 @@ function MenuScreen({ menuItems, cart, onSelectItem, onGoToCart }) {
             )}
           </button>
         </div>
+
+        {/* Category Tabs */}
+        {categories.length > 2 && (
+          <div className="max-w-7xl mx-auto mt-4 flex gap-2 flex-wrap">
+            {categories.map(cat => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-6 py-2 rounded-full font-semibold text-lg transition-all ${
+                  selectedCategory === cat
+                    ? 'bg-white text-primary'
+                    : 'bg-primary-light text-white hover:bg-secondary'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Menu Grid */}
       <div className="max-w-7xl mx-auto p-8">
         <div className="grid grid-cols-3 gap-8">
-          {menuItems.map((item) => (
+          {visibleItems.map((item) => (
             <button
               key={item.id}
               onClick={() => onSelectItem(item)}

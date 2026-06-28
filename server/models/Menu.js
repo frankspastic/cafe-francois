@@ -25,19 +25,19 @@ export const Menu = {
 
   // Create new menu item
   create(item) {
-    const { name, description, image_url, allowed_customization_types } = item;
+    const { name, description, image_url, allowed_customization_types, category } = item;
     const result = db.prepare(
-      'INSERT INTO menu_items (name, description, image_url, allowed_customization_types) VALUES (?, ?, ?, ?)'
-    ).run(name, description, image_url, JSON.stringify(allowed_customization_types || DEFAULT_TYPES));
+      'INSERT INTO menu_items (name, description, image_url, allowed_customization_types, category) VALUES (?, ?, ?, ?, ?)'
+    ).run(name, description, image_url, JSON.stringify(allowed_customization_types || DEFAULT_TYPES), category || 'Coffee');
     return result.lastInsertRowid;
   },
 
   // Update menu item
   update(id, item) {
-    const { name, description, image_url, available, allowed_customization_types } = item;
+    const { name, description, image_url, available, allowed_customization_types, category } = item;
     return db.prepare(
-      'UPDATE menu_items SET name = ?, description = ?, image_url = ?, available = ?, allowed_customization_types = ? WHERE id = ?'
-    ).run(name, description, image_url, available, JSON.stringify(allowed_customization_types || DEFAULT_TYPES), id);
+      'UPDATE menu_items SET name = ?, description = ?, image_url = ?, available = ?, allowed_customization_types = ?, category = ? WHERE id = ?'
+    ).run(name, description, image_url, available, JSON.stringify(allowed_customization_types || DEFAULT_TYPES), category || 'Coffee', id);
   },
 
   // Delete menu item (soft delete)

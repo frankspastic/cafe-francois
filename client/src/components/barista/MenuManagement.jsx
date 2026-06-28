@@ -11,7 +11,8 @@ function MenuManagement() {
     description: '',
     image_url: '',
     available: 1,
-    allowed_customization_types: ['size', 'milk', 'extra']
+    allowed_customization_types: ['size', 'milk', 'extra'],
+    category: 'Coffee'
   });
 
   useEffect(() => {
@@ -34,7 +35,8 @@ function MenuManagement() {
       description: item.description,
       image_url: item.image_url || '',
       available: item.available,
-      allowed_customization_types: item.allowed_customization_types || ['size', 'milk', 'extra']
+      allowed_customization_types: item.allowed_customization_types || ['size', 'milk', 'extra'],
+      category: item.category || 'Coffee'
     });
     setIsEditing(true);
   };
@@ -53,7 +55,7 @@ function MenuManagement() {
   const handleCancel = () => {
     setIsEditing(false);
     setEditingItem(null);
-    setFormData({ name: '', description: '', image_url: '', available: 1, allowed_customization_types: ['size', 'milk', 'extra'] });
+    setFormData({ name: '', description: '', image_url: '', available: 1, allowed_customization_types: ['size', 'milk', 'extra'], category: 'Coffee' });
   };
 
   const handleSubmit = async (e) => {
@@ -135,6 +137,24 @@ function MenuManagement() {
                 onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                 className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Category
+              </label>
+              <input
+                type="text"
+                list="category-options"
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                placeholder="e.g. Coffee, Tea, Food"
+                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none"
+              />
+              <datalist id="category-options">
+                {[...new Set(menuItems.map(i => i.category).filter(Boolean))].map(cat => (
+                  <option key={cat} value={cat} />
+                ))}
+              </datalist>
             </div>
             <div className="flex items-center gap-3">
               <input

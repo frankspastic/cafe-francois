@@ -73,6 +73,13 @@ export async function initializeDatabase() {
     // Column already exists — safe to ignore
   }
 
+  // Migration: add category if it doesn't exist yet
+  try {
+    db.run("ALTER TABLE menu_items ADD COLUMN category TEXT DEFAULT 'Coffee'");
+  } catch (e) {
+    // Column already exists — safe to ignore
+  }
+
   console.log('Database initialized successfully');
   saveDatabase();
 }
