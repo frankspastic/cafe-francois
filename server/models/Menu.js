@@ -1,31 +1,43 @@
 import db from '../db/database.js';
 
+const DEFAULT_TYPES = ['size', 'milk', 'extra'];
+
+function parseItem(item) {
+  if (!item) return item;
+  return {
+    ...item,
+    allowed_customization_types: item.allowed_customization_types
+      ? JSON.parse(item.allowed_customization_types)
+      : DEFAULT_TYPES,
+  };
+}
+
 export const Menu = {
   // Get all menu items
   getAll() {
-    return db.prepare('SELECT * FROM menu_items WHERE available = 1 ORDER BY name').all();
+    return db.prepare('SELECT * FROM menu_items WHERE available = 1 ORDER BY name').all().map(parseItem);
   },
 
   // Get menu item by ID
   getById(id) {
-    return db.prepare('SELECT * FROM menu_items WHERE id = ?').get(id);
+    return parseItem(db.prepare('SELECT * FROM menu_items WHERE id = ?').get(id));
   },
 
   // Create new menu item
   create(item) {
-    const { name, description, image_url } = item;
+    const { name, description, image_url, allowed_customization_types } = item;
     const result = db.prepare(
-      'INSERT INTO menu_items (name, description, image_url) VALUES (?, ?, ?)'
-    ).run(name, description, image_url);
+      'INSERT INTO menu_items (name, description, image_url, allowed_customization_types) VALUES (?, ?, ?, ?)'
+    ).run(name, description, image_url, JSON.stringify(allowed_customization_types || DEFAULT_TYPES));
     return result.lastInsertRowid;
   },
 
   // Update menu item
   update(id, item) {
-    const { name, description, image_url, available } = item;
+    const { name, description, image_url, available, allowed_customization_types } = item;
     return db.prepare(
-      'UPDATE menu_items SET name = ?, description = ?, image_url = ?, available = ? WHERE id = ?'
-    ).run(name, description, image_url, available, id);
+      'UPDATE menu_items SET name = ?, description = ?, image_url = ?, available = ?, allowed_customization_types = ? WHERE id = ?'
+    ).run(name, description, image_url, available, JSON.stringify(allowed_customization_types || DEFAULT_TYPES), id);
   },
 
   // Delete menu item (soft delete)

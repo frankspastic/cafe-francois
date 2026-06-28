@@ -66,6 +66,13 @@ export async function initializeDatabase() {
     )
   `);
 
+  // Migration: add allowed_customization_types if it doesn't exist yet
+  try {
+    db.run('ALTER TABLE menu_items ADD COLUMN allowed_customization_types TEXT DEFAULT \'["size","milk","extra"]\'');
+  } catch (e) {
+    // Column already exists — safe to ignore
+  }
+
   console.log('Database initialized successfully');
   saveDatabase();
 }

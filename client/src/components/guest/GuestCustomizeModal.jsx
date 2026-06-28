@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 function GuestCustomizeModal({ item, customizations, onClose, onAddToCart }) {
+  const allowedTypes = item.allowed_customization_types || ['size', 'milk', 'extra'];
   const [selectedSize, setSelectedSize] = useState(customizations.size[1]?.name || 'Medium');
   const [selectedMilk, setSelectedMilk] = useState(customizations.milk[0]?.name || 'Whole Milk');
   const [selectedExtras, setSelectedExtras] = useState([]);
@@ -15,9 +16,9 @@ function GuestCustomizeModal({ item, customizations, onClose, onAddToCart }) {
 
   const handleAddToCart = () => {
     onAddToCart(item, {
-      size: selectedSize,
-      milk: selectedMilk,
-      extras: selectedExtras
+      size: allowedTypes.includes('size') ? selectedSize : null,
+      milk: allowedTypes.includes('milk') ? selectedMilk : null,
+      extras: allowedTypes.includes('extra') ? selectedExtras : [],
     });
   };
 
@@ -33,64 +34,70 @@ function GuestCustomizeModal({ item, customizations, onClose, onAddToCart }) {
         {/* Customization Options */}
         <div className="p-4 space-y-6">
           {/* Size */}
-          <div>
-            <h3 className="text-lg font-semibold mb-3">Size</h3>
-            <div className="grid grid-cols-3 gap-2">
-              {customizations.size.map((size) => (
-                <button
-                  key={size.id}
-                  onClick={() => setSelectedSize(size.name)}
-                  className={`p-3 rounded-lg border-2 text-sm font-semibold transition-all ${
-                    selectedSize === size.name
-                      ? 'border-primary bg-primary text-white'
-                      : 'border-gray-300 hover:border-primary'
-                  }`}
-                >
-                  {size.name}
-                </button>
-              ))}
+          {allowedTypes.includes('size') && (
+            <div>
+              <h3 className="text-lg font-semibold mb-3">Size</h3>
+              <div className="grid grid-cols-3 gap-2">
+                {customizations.size.map((size) => (
+                  <button
+                    key={size.id}
+                    onClick={() => setSelectedSize(size.name)}
+                    className={`p-3 rounded-lg border-2 text-sm font-semibold transition-all ${
+                      selectedSize === size.name
+                        ? 'border-primary bg-primary text-white'
+                        : 'border-gray-300 hover:border-primary'
+                    }`}
+                  >
+                    {size.name}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Milk */}
-          <div>
-            <h3 className="text-lg font-semibold mb-3">Milk Type</h3>
-            <div className="grid grid-cols-2 gap-2">
-              {customizations.milk.map((milk) => (
-                <button
-                  key={milk.id}
-                  onClick={() => setSelectedMilk(milk.name)}
-                  className={`p-3 rounded-lg border-2 text-sm font-semibold transition-all ${
-                    selectedMilk === milk.name
-                      ? 'border-primary bg-primary text-white'
-                      : 'border-gray-300 hover:border-primary'
-                  }`}
-                >
-                  {milk.name}
-                </button>
-              ))}
+          {allowedTypes.includes('milk') && (
+            <div>
+              <h3 className="text-lg font-semibold mb-3">Milk Type</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {customizations.milk.map((milk) => (
+                  <button
+                    key={milk.id}
+                    onClick={() => setSelectedMilk(milk.name)}
+                    className={`p-3 rounded-lg border-2 text-sm font-semibold transition-all ${
+                      selectedMilk === milk.name
+                        ? 'border-primary bg-primary text-white'
+                        : 'border-gray-300 hover:border-primary'
+                    }`}
+                  >
+                    {milk.name}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Extras */}
-          <div>
-            <h3 className="text-lg font-semibold mb-3">Extras (Optional)</h3>
-            <div className="grid grid-cols-2 gap-2">
-              {customizations.extra.map((extra) => (
-                <button
-                  key={extra.id}
-                  onClick={() => handleToggleExtra(extra.name)}
-                  className={`p-3 rounded-lg border-2 text-sm font-semibold transition-all ${
-                    selectedExtras.includes(extra.name)
-                      ? 'border-primary bg-primary text-white'
-                      : 'border-gray-300 hover:border-primary'
-                  }`}
-                >
-                  {extra.name}
-                </button>
-              ))}
+          {allowedTypes.includes('extra') && (
+            <div>
+              <h3 className="text-lg font-semibold mb-3">Extras (Optional)</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {customizations.extra.map((extra) => (
+                  <button
+                    key={extra.id}
+                    onClick={() => handleToggleExtra(extra.name)}
+                    className={`p-3 rounded-lg border-2 text-sm font-semibold transition-all ${
+                      selectedExtras.includes(extra.name)
+                        ? 'border-primary bg-primary text-white'
+                        : 'border-gray-300 hover:border-primary'
+                    }`}
+                  >
+                    {extra.name}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Footer */}

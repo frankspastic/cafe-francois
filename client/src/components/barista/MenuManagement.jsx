@@ -10,7 +10,8 @@ function MenuManagement() {
     name: '',
     description: '',
     image_url: '',
-    available: 1
+    available: 1,
+    allowed_customization_types: ['size', 'milk', 'extra']
   });
 
   useEffect(() => {
@@ -32,7 +33,8 @@ function MenuManagement() {
       name: item.name,
       description: item.description,
       image_url: item.image_url || '',
-      available: item.available
+      available: item.available,
+      allowed_customization_types: item.allowed_customization_types || ['size', 'milk', 'extra']
     });
     setIsEditing(true);
   };
@@ -51,7 +53,7 @@ function MenuManagement() {
   const handleCancel = () => {
     setIsEditing(false);
     setEditingItem(null);
-    setFormData({ name: '', description: '', image_url: '', available: 1 });
+    setFormData({ name: '', description: '', image_url: '', available: 1, allowed_customization_types: ['size', 'milk', 'extra'] });
   };
 
   const handleSubmit = async (e) => {
@@ -144,6 +146,31 @@ function MenuManagement() {
               <label className="text-sm font-semibold text-gray-700">
                 Available to order
               </label>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Customization Options
+              </label>
+              {[
+                { key: 'size', label: 'Size' },
+                { key: 'milk', label: 'Milk Type' },
+                { key: 'extra', label: 'Extras & Syrups' },
+              ].map(({ key, label }) => (
+                <label key={key} className="flex items-center gap-3 mb-2">
+                  <input
+                    type="checkbox"
+                    checked={formData.allowed_customization_types.includes(key)}
+                    onChange={(e) => {
+                      const types = e.target.checked
+                        ? [...formData.allowed_customization_types, key]
+                        : formData.allowed_customization_types.filter(t => t !== key);
+                      setFormData({ ...formData, allowed_customization_types: types });
+                    }}
+                    className="w-5 h-5"
+                  />
+                  <span className="text-sm font-semibold text-gray-700">{label}</span>
+                </label>
+              ))}
             </div>
             <div className="flex gap-3 pt-4">
               <button
