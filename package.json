@@ -1,0 +1,22 @@
+{
+  "name": "cafe-francois",
+  "version": "1.0.0",
+  "description": "Coffee ordering app for home guests",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "npm run dev --workspace=server",
+    "dev:client": "npm run dev --workspace=client",
+    "install:all": "npm install && npm install --workspace=client && npm install --workspace=server"
+  },
+  "keywords": ["coffee", "ordering", "kiosk"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
