@@ -47,7 +47,9 @@ function MenuManagement() {
       name: '',
       description: '',
       image_url: '',
-      available: 1
+      available: 1,
+      allowed_customization_types: ['size', 'milk', 'extra'],
+      category: 'Coffee'
     });
     setIsEditing(true);
   };
@@ -104,17 +106,37 @@ function MenuManagement() {
             {editingItem ? 'Edit Menu Item' : 'New Menu Item'}
           </h3>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Name
-              </label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Category
+                </label>
+                <input
+                  type="text"
+                  list="category-options"
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  placeholder="e.g. Coffee, Tea, Food"
+                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none"
+                />
+                <datalist id="category-options">
+                  {[...new Set(menuItems.map(i => i.category).filter(Boolean))].map(cat => (
+                    <option key={cat} value={cat} />
+                  ))}
+                </datalist>
+              </div>
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -137,24 +159,6 @@ function MenuManagement() {
                 onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                 className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none"
               />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Category
-              </label>
-              <input
-                type="text"
-                list="category-options"
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                placeholder="e.g. Coffee, Tea, Food"
-                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none"
-              />
-              <datalist id="category-options">
-                {[...new Set(menuItems.map(i => i.category).filter(Boolean))].map(cat => (
-                  <option key={cat} value={cat} />
-                ))}
-              </datalist>
             </div>
             <div className="flex items-center gap-3">
               <input
