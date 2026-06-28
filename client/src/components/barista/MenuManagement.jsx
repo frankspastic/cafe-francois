@@ -33,8 +33,12 @@ function SortableRow({ item, onEdit, onDelete }) {
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={`flex items-center gap-3 bg-white rounded-lg border px-4 py-3 ${
-        isDragging ? 'opacity-40 shadow-xl border-primary' : 'border-gray-200 shadow-sm'
+      className={`flex items-center gap-3 rounded-lg border px-4 py-3 ${
+        isDragging
+          ? 'opacity-40 shadow-xl border-primary bg-white'
+          : item.available
+          ? 'bg-white border-gray-200 shadow-sm'
+          : 'bg-gray-50 border-gray-200 shadow-sm opacity-60'
       }`}
     >
       <button
@@ -45,10 +49,13 @@ function SortableRow({ item, onEdit, onDelete }) {
       >
         <GripIcon />
       </button>
-      <div className="flex-1 min-w-0">
-        <span className="font-semibold text-gray-800">{item.name}</span>
+      <div className="flex-1 min-w-0 flex items-center gap-2">
+        <span className={`font-semibold ${item.available ? 'text-gray-800' : 'text-gray-400'}`}>{item.name}</span>
+        {!item.available && (
+          <span className="text-xs bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full font-medium">Hidden</span>
+        )}
         {item.description && (
-          <span className="text-gray-400 text-sm ml-2 truncate hidden sm:inline">{item.description}</span>
+          <span className="text-gray-400 text-sm truncate hidden sm:inline">{item.description}</span>
         )}
       </div>
       <div className="flex gap-2 flex-shrink-0">
@@ -90,7 +97,7 @@ function MenuManagement() {
 
   const loadMenu = async () => {
     try {
-      setMenuItems(await menuAPI.getAll());
+      setMenuItems(await menuAPI.getAllAdmin());
     } catch (error) {
       console.error('Error loading menu:', error);
     }

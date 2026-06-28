@@ -7,6 +7,11 @@ export const menuAPI = {
     return response.json();
   },
 
+  async getAllAdmin() {
+    const response = await fetch(`${API_BASE}/menu?admin=true`);
+    return response.json();
+  },
+
   async getCustomizations() {
     const response = await fetch(`${API_BASE}/menu/customizations`);
     return response.json();

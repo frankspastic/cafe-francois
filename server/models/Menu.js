@@ -13,9 +13,14 @@ function parseItem(item) {
 }
 
 export const Menu = {
-  // Get all menu items
+  // Get available menu items (kiosk/guest view)
   getAll() {
     return db.prepare('SELECT * FROM menu_items WHERE available = 1 ORDER BY category, sort_order ASC, name ASC').all().map(parseItem);
+  },
+
+  // Get all menu items including unavailable (barista management view)
+  getAllAdmin() {
+    return db.prepare('SELECT * FROM menu_items ORDER BY category, sort_order ASC, name ASC').all().map(parseItem);
   },
 
   // Get menu item by ID

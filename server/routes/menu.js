@@ -3,10 +3,10 @@ import { Menu } from '../models/Menu.js';
 
 const router = express.Router();
 
-// Get all menu items
+// Get all menu items (admin=true returns unavailable items too)
 router.get('/', (req, res) => {
   try {
-    const items = Menu.getAll();
+    const items = req.query.admin === 'true' ? Menu.getAllAdmin() : Menu.getAll();
     res.json(items);
   } catch (error) {
     res.status(500).json({ error: error.message });
