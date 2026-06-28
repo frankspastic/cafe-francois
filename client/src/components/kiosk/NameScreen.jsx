@@ -11,24 +11,26 @@ function NameScreen({ onSubmit }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary to-secondary flex items-center justify-center p-8">
-      <div className="bg-white rounded-3xl shadow-2xl p-12 max-w-2xl w-full">
-        <h2 className="text-4xl font-bold text-gray-800 mb-8 text-center">
-          What's your name?
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-8">
+    <div className="min-h-screen bg-stone-950 flex items-center justify-center p-8">
+      <div className="bg-stone-900 border border-stone-800 rounded-3xl shadow-2xl p-12 max-w-2xl w-full">
+        <div className="text-center mb-10">
+          <div className="text-6xl mb-4">👤</div>
+          <h2 className="text-4xl font-bold text-stone-100">What's your name?</h2>
+          <p className="text-stone-500 mt-2">So we know whose coffee is whose</p>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-5">
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Enter your name"
             autoFocus
-            className="w-full px-8 py-6 text-3xl border-2 border-gray-300 rounded-xl focus:border-primary focus:outline-none"
+            className="w-full px-8 py-6 text-3xl bg-stone-800 border-2 border-stone-700 text-stone-100 placeholder-stone-600 rounded-2xl focus:border-accent focus:outline-none transition-colors"
           />
           <button
             type="submit"
             disabled={!name.trim()}
-            className="w-full bg-primary text-white px-8 py-6 rounded-xl text-3xl font-semibold hover:bg-secondary transition-all disabled:bg-gray-300 disabled:cursor-not-allowed"
+            className="w-full bg-accent text-stone-900 px-8 py-6 rounded-2xl text-3xl font-bold hover:brightness-110 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-lg shadow-accent/20"
           >
             Place Order
           </button>
