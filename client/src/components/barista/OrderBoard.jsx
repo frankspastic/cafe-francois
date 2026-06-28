@@ -95,12 +95,20 @@ function OrderBoard({ orders, onUpdateStatus }) {
                     )}
                   </div>
 
-                  <button
-                    onClick={() => onUpdateStatus(order.id, 'in-progress')}
-                    className="w-full bg-blue-500 text-white px-4 py-3 rounded-lg font-semibold hover:bg-blue-600 transition-all"
-                  >
-                    Start Preparing
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => onUpdateStatus(order.id, 'in-progress')}
+                      className="flex-1 bg-blue-500 text-white px-4 py-3 rounded-lg font-semibold hover:bg-blue-600 transition-all"
+                    >
+                      Start Preparing
+                    </button>
+                    <button
+                      onClick={() => onUpdateStatus(order.id, 'cancelled')}
+                      className="bg-red-100 text-red-600 px-4 py-3 rounded-lg font-semibold hover:bg-red-200 transition-all"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

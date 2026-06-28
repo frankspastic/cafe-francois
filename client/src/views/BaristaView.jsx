@@ -94,8 +94,7 @@ function BaristaView() {
       console.log('[Barista] Order status updated via socket:', updatedOrder);
       setOrders(prev => {
         const filtered = prev.filter(o => o.id !== updatedOrder.id);
-        if (updatedOrder.status === 'completed') {
-          // Refresh archived if on that tab
+        if (updatedOrder.status === 'completed' || updatedOrder.status === 'cancelled') {
           if (activeTab === TABS.ARCHIVED) {
             ordersAPI.getArchived().then(setArchivedOrders);
           }
