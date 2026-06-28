@@ -87,6 +87,20 @@ export async function initializeDatabase() {
     // Column already exists — safe to ignore
   }
 
+  // Migration: improve seed descriptions (only if still using original text)
+  const descUpdates = [
+    ['Espresso', 'Rich and bold shot of espresso', 'A concentrated shot of pure coffee — intense, rich, and topped with a velvety golden crema'],
+    ['Americano', 'Espresso with hot water', 'Bold espresso diluted with hot water for a smooth, full-bodied cup without the bitterness'],
+    ['Cappuccino', 'Espresso with steamed milk and foam', 'Equal parts espresso, steamed milk, and silky microfoam — the classic Italian coffeehouse balance'],
+    ['Latte', 'Espresso with steamed milk', 'Smooth espresso blended with velvety steamed milk, finished with a delicate layer of foam'],
+    ['Mocha', 'Latte with chocolate', 'Rich espresso and dark chocolate come together with steamed milk for an indulgent coffeehouse treat'],
+    ['Cold Brew', 'Smooth cold-steeped coffee', 'Slow-steeped for 12 hours for a naturally sweet, low-acidity cold coffee with a smooth finish'],
+    ['Iced Latte', 'Chilled latte over ice', 'Freshly pulled espresso poured over ice and finished with cold milk — refreshing and bold'],
+  ];
+  descUpdates.forEach(([name, oldDesc, newDesc]) => {
+    db.run('UPDATE menu_items SET description = ? WHERE name = ? AND description = ?', [newDesc, name, oldDesc]);
+  });
+
   console.log('Database initialized successfully');
   saveDatabase();
 }
