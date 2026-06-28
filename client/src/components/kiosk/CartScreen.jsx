@@ -40,8 +40,11 @@ function CartScreen({ cart, onRemoveItem, onContinueShopping, onCheckout }) {
                   className="bg-stone-900 border border-stone-800 rounded-2xl p-6 flex items-center justify-between"
                 >
                   <div className="flex items-center gap-5">
-                    <div className="w-14 h-14 bg-gradient-to-br from-primary to-stone-700 rounded-xl flex items-center justify-center text-3xl flex-shrink-0">
-                      ☕
+                    <div className="w-14 h-14 bg-gradient-to-br from-primary to-stone-700 rounded-xl flex items-center justify-center text-3xl flex-shrink-0 overflow-hidden">
+                      {item.image_url
+                        ? <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                        : '☕'
+                      }
                     </div>
                     <div>
                       <h3 className="text-xl font-bold text-stone-100">{item.name}</h3>

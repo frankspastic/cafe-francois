@@ -59,8 +59,11 @@ function GuestMenuScreen({ menuItems, cart, onSelectItem, onGoToCart }) {
               onClick={() => onSelectItem(item)}
               className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all overflow-hidden"
             >
-              <div className="aspect-square bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                <span className="text-6xl">☕</span>
+              <div className="aspect-square bg-gradient-to-br from-primary to-secondary flex items-center justify-center overflow-hidden">
+                {item.image_url
+                  ? <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                  : <span className="text-6xl">☕</span>
+                }
               </div>
               <div className="p-4">
                 <h3 className="text-lg font-bold text-gray-800 mb-1">{item.name}</h3>

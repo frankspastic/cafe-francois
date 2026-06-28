@@ -6,8 +6,11 @@ function MenuCard({ item, onSelectItem }) {
       onClick={() => onSelectItem(item)}
       className="bg-stone-900 rounded-2xl overflow-hidden hover:ring-2 hover:ring-accent transition-all text-left group border border-stone-800"
     >
-      <div className="h-32 md:h-52 bg-gradient-to-br from-primary via-stone-800 to-stone-900 flex items-center justify-center">
-        <span className="text-5xl md:text-8xl group-hover:scale-110 transition-transform duration-300">☕</span>
+      <div className="h-32 md:h-52 bg-gradient-to-br from-primary via-stone-800 to-stone-900 flex items-center justify-center overflow-hidden">
+        {item.image_url
+          ? <img src={item.image_url} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+          : <span className="text-5xl md:text-8xl group-hover:scale-110 transition-transform duration-300">☕</span>
+        }
       </div>
       <div className="p-3 md:p-5">
         <h3 className="text-base md:text-xl font-bold text-stone-100">{item.name}</h3>
