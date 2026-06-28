@@ -1,12 +1,29 @@
 import { useState } from 'react';
 
-function MenuScreen({ menuItems, cart, onSelectItem, onGoToCart }) {
-  const categories = ['All', ...new Set(menuItems.map(i => i.category).filter(Boolean))];
-  const [selectedCategory, setSelectedCategory] = useState('All');
+function MenuCard({ item, onSelectItem }) {
+  return (
+    <button
+      onClick={() => onSelectItem(item)}
+      className="bg-stone-900 rounded-2xl overflow-hidden hover:ring-2 hover:ring-accent transition-all text-left group border border-stone-800"
+    >
+      <div className="h-32 md:h-52 bg-gradient-to-br from-primary via-stone-800 to-stone-900 flex items-center justify-center">
+        <span className="text-5xl md:text-8xl group-hover:scale-110 transition-transform duration-300">☕</span>
+      </div>
+      <div className="p-3 md:p-5">
+        <h3 className="text-base md:text-xl font-bold text-stone-100">{item.name}</h3>
+        <p className="text-stone-500 text-xs md:text-sm mt-1 line-clamp-2">{item.description}</p>
+        <div className="mt-2 md:mt-4">
+          <span className="text-accent text-xs md:text-sm font-semibold">Customize →</span>
+        </div>
+      </div>
+    </button>
+  );
+}
 
-  const visibleItems = selectedCategory === 'All'
-    ? menuItems
-    : menuItems.filter(i => i.category === selectedCategory);
+function MenuScreen({ menuItems, cart, onSelectItem, onGoToCart }) {
+  const categoryOrder = [...new Set(menuItems.map(i => i.category).filter(Boolean))];
+  const categories = ['All', ...categoryOrder];
+  const [selectedCategory, setSelectedCategory] = useState('All');
 
   return (
     <div className="min-h-screen bg-stone-950 text-stone-100">
@@ -49,33 +66,45 @@ function MenuScreen({ menuItems, cart, onSelectItem, onGoToCart }) {
         </div>
       </div>
 
-      {/* Menu Grid */}
-      <div className="max-w-7xl mx-auto p-4 md:p-8">
-        <p className="text-stone-500 text-sm mb-4 md:mb-6 uppercase tracking-widest">
-          {visibleItems.length} {visibleItems.length === 1 ? 'item' : 'items'}
-        </p>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6">
-          {visibleItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => onSelectItem(item)}
-              className="bg-stone-900 rounded-2xl overflow-hidden hover:ring-2 hover:ring-accent transition-all text-left group border border-stone-800"
-            >
-              <div className="h-32 md:h-52 bg-gradient-to-br from-primary via-stone-800 to-stone-900 flex items-center justify-center">
-                <span className="text-5xl md:text-8xl group-hover:scale-110 transition-transform duration-300">☕</span>
-              </div>
-              <div className="p-3 md:p-5">
-                <h3 className="text-base md:text-xl font-bold text-stone-100">{item.name}</h3>
-                <p className="text-stone-500 text-xs md:text-sm mt-1 line-clamp-2">{item.description}</p>
-                <div className="mt-2 md:mt-4">
-                  <span className="text-accent text-xs md:text-sm font-semibold">
-                    Customize →
-                  </span>
+      {/* Menu Content */}
+      <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8 md:space-y-12">
+        {selectedCategory === 'All' ? (
+          // Grouped by category
+          categoryOrder.map(cat => {
+            const items = menuItems.filter(i => i.category === cat);
+            if (!items.length) return null;
+            return (
+              <div key={cat}>
+                <div className="flex items-center gap-4 mb-4 md:mb-6">
+                  <h2 className="text-lg md:text-2xl font-bold text-stone-100">{cat}</h2>
+                  <div className="flex-1 h-px bg-stone-800" />
+                  <span className="text-stone-600 text-sm">{items.length} {items.length === 1 ? 'item' : 'items'}</span>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6">
+                  {items.map(item => (
+                    <MenuCard key={item.id} item={item} onSelectItem={onSelectItem} />
+                  ))}
                 </div>
               </div>
-            </button>
-          ))}
-        </div>
+            );
+          })
+        ) : (
+          // Single category flat grid
+          <div>
+            <div className="flex items-center gap-4 mb-4 md:mb-6">
+              <h2 className="text-lg md:text-2xl font-bold text-stone-100">{selectedCategory}</h2>
+              <div className="flex-1 h-px bg-stone-800" />
+              <span className="text-stone-600 text-sm">
+                {menuItems.filter(i => i.category === selectedCategory).length} items
+              </span>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6">
+              {menuItems.filter(i => i.category === selectedCategory).map(item => (
+                <MenuCard key={item.id} item={item} onSelectItem={onSelectItem} />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
