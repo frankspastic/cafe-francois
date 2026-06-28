@@ -44,6 +44,17 @@ router.delete('/customizations/:id', (req, res) => {
   }
 });
 
+// Bulk reorder menu items
+router.patch('/reorder', (req, res) => {
+  try {
+    const { items } = req.body;
+    Menu.reorder(items);
+    res.json({ message: 'Reordered' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get menu item by ID
 router.get('/:id', (req, res) => {
   try {

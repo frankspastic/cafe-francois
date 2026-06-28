@@ -15,7 +15,7 @@ function parseItem(item) {
 export const Menu = {
   // Get all menu items
   getAll() {
-    return db.prepare('SELECT * FROM menu_items WHERE available = 1 ORDER BY name').all().map(parseItem);
+    return db.prepare('SELECT * FROM menu_items WHERE available = 1 ORDER BY category, sort_order ASC, name ASC').all().map(parseItem);
   },
 
   // Get menu item by ID
@@ -43,6 +43,13 @@ export const Menu = {
   // Delete menu item (soft delete)
   delete(id) {
     return db.prepare('UPDATE menu_items SET available = 0 WHERE id = ?').run(id);
+  },
+
+  // Bulk-update sort_order for drag-to-reorder
+  reorder(items) {
+    items.forEach(({ id, sort_order }) => {
+      db.prepare('UPDATE menu_items SET sort_order = ? WHERE id = ?').run(sort_order, id);
+    });
   },
 
   // Get all customization options

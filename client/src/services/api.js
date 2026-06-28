@@ -51,6 +51,15 @@ export const menuAPI = {
       method: 'DELETE'
     });
     return response.json();
+  },
+
+  async reorder(items) {
+    const response = await fetch(`${API_BASE}/menu/reorder`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items })
+    });
+    return response.json();
   }
 };
 

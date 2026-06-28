@@ -80,6 +80,13 @@ export async function initializeDatabase() {
     // Column already exists — safe to ignore
   }
 
+  // Migration: add sort_order for drag-to-reorder
+  try {
+    db.run('ALTER TABLE menu_items ADD COLUMN sort_order INTEGER DEFAULT 0');
+  } catch (e) {
+    // Column already exists — safe to ignore
+  }
+
   console.log('Database initialized successfully');
   saveDatabase();
 }
