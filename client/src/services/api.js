@@ -65,6 +65,20 @@ export const menuAPI = {
       body: JSON.stringify({ items })
     });
     return response.json();
+  },
+
+  async getCategories() {
+    const response = await fetch(`${API_BASE}/menu/categories`);
+    return response.json();
+  },
+
+  async reorderCategories(items) {
+    const response = await fetch(`${API_BASE}/menu/categories/reorder`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items })
+    });
+    return response.json();
   }
 };
 

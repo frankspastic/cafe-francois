@@ -13,6 +13,25 @@ router.get('/', (req, res) => {
   }
 });
 
+// Get categories in sort order
+router.get('/categories', (req, res) => {
+  try {
+    res.json(Menu.getCategories());
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Reorder categories
+router.patch('/categories/reorder', (req, res) => {
+  try {
+    Menu.reorderCategories(req.body.items);
+    res.json({ message: 'Reordered' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get customization options
 router.get('/customizations', (req, res) => {
   try {

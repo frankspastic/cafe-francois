@@ -76,8 +76,36 @@ function SortableRow({ item, onEdit, onDelete }) {
   );
 }
 
+function SortableCategory({ category, itemCount, children }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: category.id });
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className={isDragging ? 'opacity-40' : ''}
+    >
+      <div className="flex items-center gap-3 mb-3">
+        <button
+          {...attributes}
+          {...listeners}
+          className="text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing touch-none flex-shrink-0"
+          tabIndex={-1}
+        >
+          <GripIcon />
+        </button>
+        <h3 className="text-lg font-bold text-gray-700">{category.name}</h3>
+        <div className="flex-1 h-px bg-gray-200" />
+        <span className="text-xs text-gray-400">{itemCount} {itemCount === 1 ? 'item' : 'items'} — drag to reorder</span>
+      </div>
+      {children}
+    </div>
+  );
+}
+
 function MenuManagement() {
   const [menuItems, setMenuItems] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState({
@@ -97,7 +125,9 @@ function MenuManagement() {
 
   const loadMenu = async () => {
     try {
-      setMenuItems(await menuAPI.getAllAdmin());
+      const [items, cats] = await Promise.all([menuAPI.getAllAdmin(), menuAPI.getCategories()]);
+      setMenuItems(items);
+      setCategories(cats);
     } catch (error) {
       console.error('Error loading menu:', error);
     }
@@ -156,26 +186,29 @@ function MenuManagement() {
     }
   };
 
-  const handleDragEnd = async (event, category) => {
+  const handleItemDragEnd = (event, categoryName) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
     setMenuItems(prev => {
-      const allCategories = [...new Set(prev.map(i => i.category || 'Uncategorized'))];
-      const catItems = prev.filter(i => (i.category || 'Uncategorized') === category);
-      const oldIndex = catItems.findIndex(i => i.id === active.id);
-      const newIndex = catItems.findIndex(i => i.id === over.id);
-      const reordered = arrayMove(catItems, oldIndex, newIndex);
-
+      const catItems = prev.filter(i => (i.category || 'Uncategorized') === categoryName);
+      const others = prev.filter(i => (i.category || 'Uncategorized') !== categoryName);
+      const reordered = arrayMove(catItems, catItems.findIndex(i => i.id === active.id), catItems.findIndex(i => i.id === over.id));
       menuAPI.reorder(reordered.map((item, idx) => ({ id: item.id, sort_order: idx })));
-
-      return allCategories.flatMap(cat =>
-        cat === category ? reordered : prev.filter(i => (i.category || 'Uncategorized') === cat)
-      );
+      return [...others, ...reordered];
     });
   };
 
-  const categoryOrder = [...new Set(menuItems.map(i => i.category || 'Uncategorized'))];
+  const handleCategoryDragEnd = (event) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    setCategories(prev => {
+      const reordered = arrayMove(prev, prev.findIndex(c => c.id === active.id), prev.findIndex(c => c.id === over.id));
+      menuAPI.reorderCategories(reordered.map((cat, idx) => ({ id: cat.id, sort_order: idx })));
+      return reordered;
+    });
+  };
 
   return (
     <div>
@@ -217,7 +250,7 @@ function MenuManagement() {
                   className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none"
                 />
                 <datalist id="category-options">
-                  {categoryOrder.map(cat => <option key={cat} value={cat} />)}
+                  {categories.map(cat => <option key={cat.id} value={cat.name} />)}
                 </datalist>
               </div>
             </div>
@@ -282,33 +315,32 @@ function MenuManagement() {
           </form>
         </div>
       ) : (
-        <div className="space-y-8 mb-8">
-          {categoryOrder.map(category => {
-            const items = menuItems.filter(i => (i.category || 'Uncategorized') === category);
-            return (
-              <div key={category}>
-                <div className="flex items-center gap-3 mb-3">
-                  <h3 className="text-lg font-bold text-gray-700">{category}</h3>
-                  <div className="flex-1 h-px bg-gray-200" />
-                  <span className="text-xs text-gray-400">{items.length} {items.length === 1 ? 'item' : 'items'} — drag to reorder</span>
-                </div>
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={(e) => handleDragEnd(e, category)}
-                >
-                  <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
-                    <div className="space-y-2">
-                      {items.map(item => (
-                        <SortableRow key={item.id} item={item} onEdit={handleEdit} onDelete={handleDelete} />
-                      ))}
-                    </div>
-                  </SortableContext>
-                </DndContext>
-              </div>
-            );
-          })}
-        </div>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleCategoryDragEnd}>
+          <SortableContext items={categories.map(c => c.id)} strategy={verticalListSortingStrategy}>
+            <div className="space-y-8 mb-8">
+              {categories.map(category => {
+                const items = menuItems.filter(i => (i.category || 'Uncategorized') === category.name);
+                return (
+                  <SortableCategory key={category.id} category={category} itemCount={items.length}>
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={(e) => handleItemDragEnd(e, category.name)}
+                    >
+                      <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+                        <div className="space-y-2 ml-6">
+                          {items.map(item => (
+                            <SortableRow key={item.id} item={item} onEdit={handleEdit} onDelete={handleDelete} />
+                          ))}
+                        </div>
+                      </SortableContext>
+                    </DndContext>
+                  </SortableCategory>
+                );
+              })}
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
 
       <CustomizationManagement />

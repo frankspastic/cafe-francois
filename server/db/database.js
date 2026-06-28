@@ -87,6 +87,20 @@ export async function initializeDatabase() {
     // Column already exists — safe to ignore
   }
 
+  // Migration: add categories table for category ordering
+  db.run(`
+    CREATE TABLE IF NOT EXISTS categories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT UNIQUE NOT NULL,
+      sort_order INTEGER DEFAULT 0
+    )
+  `);
+  // Populate from existing menu_items categories (INSERT OR IGNORE skips dupes)
+  db.run(`
+    INSERT OR IGNORE INTO categories (name, sort_order)
+    SELECT DISTINCT category, 0 FROM menu_items WHERE category IS NOT NULL
+  `);
+
   // Migration: improve seed descriptions (only if still using original text)
   const descUpdates = [
     ['Espresso', 'Rich and bold shot of espresso', 'A concentrated shot of pure coffee — intense, rich, and topped with a velvety golden crema'],
