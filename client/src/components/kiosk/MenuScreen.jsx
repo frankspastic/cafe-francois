@@ -69,7 +69,7 @@ function MenuScreen({ menuItems, cart, onSelectItem, onGoToCart }) {
       </div>
 
       {/* Menu Content */}
-      <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8 md:space-y-12">
+      <div className={`max-w-7xl mx-auto p-4 md:p-8 space-y-8 md:space-y-12 ${cart.length > 0 ? 'pb-28 md:pb-32' : ''}`}>
         {selectedCategory === 'All' ? (
           // Grouped by category
           categoryOrder.map(cat => {
@@ -108,6 +108,24 @@ function MenuScreen({ menuItems, cart, onSelectItem, onGoToCart }) {
           </div>
         )}
       </div>
+
+      {/* Sticky cart bar */}
+      {cart.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 p-4 md:p-6">
+          <div className="max-w-7xl mx-auto">
+            <button
+              onClick={onGoToCart}
+              className="w-full bg-accent text-stone-900 rounded-2xl py-4 md:py-5 px-6 flex items-center justify-between font-bold shadow-2xl shadow-accent/30 hover:brightness-110 transition-all"
+            >
+              <span className="bg-stone-900/20 text-stone-900 rounded-xl px-3 py-1 text-sm font-bold">
+                {cart.length} {cart.length === 1 ? 'item' : 'items'}
+              </span>
+              <span className="text-lg md:text-xl">View Cart</span>
+              <span className="text-lg">→</span>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
