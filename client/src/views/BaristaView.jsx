@@ -4,6 +4,7 @@ import OrderBoard from '../components/barista/OrderBoard';
 import MenuManagement from '../components/barista/MenuManagement';
 import ArchivedOrders from '../components/barista/ArchivedOrders';
 import QRCodeDisplay from '../components/barista/QRCodeDisplay';
+import AppearanceSettings from '../components/barista/AppearanceSettings';
 import { ordersAPI } from '../services/api';
 import socketService from '../services/socket';
 import { useWakeLock } from '../hooks/useWakeLock';
@@ -12,7 +13,8 @@ const TABS = {
   ORDERS: 'orders',
   MENU: 'menu',
   ARCHIVED: 'archived',
-  QR: 'qr'
+  QR: 'qr',
+  APPEARANCE: 'appearance'
 };
 
 // Simple PIN - in production, this would be env variable or in database
@@ -196,6 +198,16 @@ function BaristaView() {
             >
               QR Code
             </button>
+            <button
+              onClick={() => setActiveTab(TABS.APPEARANCE)}
+              className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+                activeTab === TABS.APPEARANCE
+                  ? 'bg-white text-primary'
+                  : 'bg-primary-light hover:bg-secondary text-white'
+              }`}
+            >
+              Appearance
+            </button>
           </div>
         </div>
       </div>
@@ -208,6 +220,7 @@ function BaristaView() {
         {activeTab === TABS.MENU && <MenuManagement />}
         {activeTab === TABS.ARCHIVED && <ArchivedOrders orders={archivedOrders} />}
         {activeTab === TABS.QR && <QRCodeDisplay />}
+        {activeTab === TABS.APPEARANCE && <AppearanceSettings />}
       </div>
     </div>
   );

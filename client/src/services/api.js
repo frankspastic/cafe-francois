@@ -82,6 +82,23 @@ export const menuAPI = {
   }
 };
 
+// Settings API
+export const settingsAPI = {
+  async getAll() {
+    const response = await fetch(`${API_BASE}/settings`);
+    return response.json();
+  },
+
+  async set(key, value) {
+    const response = await fetch(`${API_BASE}/settings/${key}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ value })
+    });
+    return response.json();
+  }
+};
+
 // Orders API
 export const ordersAPI = {
   async getActive() {

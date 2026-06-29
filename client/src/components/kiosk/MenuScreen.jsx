@@ -35,7 +35,6 @@ function MenuScreen({ menuItems, cart, onSelectItem, onGoToCart }) {
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div>
             <h1 className="text-xl md:text-3xl font-bold text-stone-100 tracking-tight">Café François</h1>
-            <p className="text-stone-500 text-xs md:text-sm mt-0.5">Select your drink</p>
           </div>
           <button
             onClick={onGoToCart}

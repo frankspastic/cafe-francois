@@ -5,6 +5,7 @@ import { Server } from 'socket.io';
 import { initializeDatabase, seedDatabase } from './db/database.js';
 import menuRoutes from './routes/menu.js';
 import orderRoutes from './routes/orders.js';
+import settingsRoutes from './routes/settings.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -36,6 +37,7 @@ async function startServer() {
     // Routes
     app.use('/api/menu', menuRoutes);
     app.use('/api/orders', orderRoutes);
+    app.use('/api/settings', settingsRoutes);
 
     // Health check
     app.get('/api/health', (req, res) => {

@@ -87,6 +87,14 @@ export async function initializeDatabase() {
     // Column already exists — safe to ignore
   }
 
+  // Settings table for configurable appearance options
+  db.run(`
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    )
+  `);
+
   // Migration: add categories table for category ordering
   db.run(`
     CREATE TABLE IF NOT EXISTS categories (
