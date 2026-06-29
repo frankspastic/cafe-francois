@@ -11,14 +11,11 @@ function CustomizationManagement() {
   const [customizations, setCustomizations] = useState({ size: [], milk: [], extra: [] });
   const [newOption, setNewOption] = useState({ size: '', milk: '', extra: '' });
 
-  useEffect(() => {
-    load();
-  }, []);
+  useEffect(() => { load(); }, []);
 
   const load = async () => {
     try {
-      const data = await menuAPI.getCustomizations();
-      setCustomizations(data);
+      setCustomizations(await menuAPI.getCustomizations());
     } catch (error) {
       console.error('Error loading customizations:', error);
     }
@@ -46,22 +43,19 @@ function CustomizationManagement() {
   };
 
   return (
-    <div className="mt-10">
-      <h2 className="text-3xl font-bold text-gray-800 mb-6">Customization Options</h2>
+    <div className="mt-10 pt-10 border-t border-stone-800">
+      <h2 className="text-3xl font-bold text-stone-100 mb-6">Customization Options</h2>
       <div className="grid grid-cols-3 gap-6">
         {TYPES.map(({ key, label }) => (
-          <div key={key} className="bg-white rounded-xl shadow-md p-6">
-            <h3 className="text-lg font-bold text-gray-700 mb-4">{label}</h3>
+          <div key={key} className="bg-stone-900 border border-stone-800 rounded-xl p-6">
+            <h3 className="text-sm font-semibold text-stone-400 uppercase tracking-widest mb-4">{label}</h3>
             <div className="flex flex-wrap gap-2 mb-4 min-h-[40px]">
               {customizations[key].map(opt => (
-                <span
-                  key={opt.id}
-                  className="flex items-center gap-1 bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm"
-                >
+                <span key={opt.id} className="flex items-center gap-1 bg-stone-800 text-stone-300 px-3 py-1 rounded-full text-sm">
                   {opt.name}
                   <button
                     onClick={() => handleDelete(opt.id)}
-                    className="text-gray-400 hover:text-red-500 ml-1 font-bold leading-none"
+                    className="text-stone-500 hover:text-red-400 ml-1 font-bold leading-none"
                   >
                     ×
                   </button>
@@ -75,11 +69,11 @@ function CustomizationManagement() {
                 onChange={e => setNewOption(prev => ({ ...prev, [key]: e.target.value }))}
                 onKeyDown={e => e.key === 'Enter' && handleAdd(key)}
                 placeholder={`Add ${label.toLowerCase()}...`}
-                className="flex-1 px-3 py-2 border-2 border-gray-300 rounded-lg text-sm focus:border-primary focus:outline-none"
+                className="flex-1 px-3 py-2 bg-stone-800 border border-stone-700 text-stone-100 placeholder-stone-500 rounded-lg text-sm focus:border-accent focus:outline-none"
               />
               <button
                 onClick={() => handleAdd(key)}
-                className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-secondary transition-all"
+                className="bg-accent text-stone-900 px-4 py-2 rounded-lg text-sm font-semibold hover:brightness-110 transition-all"
               >
                 Add
               </button>

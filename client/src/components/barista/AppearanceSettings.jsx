@@ -19,12 +19,12 @@ function AppearanceSettings() {
 
   return (
     <div>
-      <h2 className="text-3xl font-bold text-gray-800 mb-6">Appearance</h2>
+      <h2 className="text-3xl font-bold text-stone-100 mb-6">Appearance</h2>
 
-      <div className="bg-white rounded-xl shadow-lg p-8 max-w-2xl">
-        <h3 className="text-lg font-bold text-gray-700 mb-1">Welcome Screen Background</h3>
-        <p className="text-sm text-gray-500 mb-4">
-          Paste any image URL. It will display full-screen behind the Café François logo on the kiosk splash screen.
+      <div className="bg-stone-900 border border-stone-800 rounded-xl p-8 max-w-2xl">
+        <h3 className="text-lg font-bold text-stone-200 mb-1">Welcome Screen Background</h3>
+        <p className="text-sm text-stone-500 mb-4">
+          Paste any image URL. It displays full-screen behind the logo on the kiosk splash screen.
         </p>
 
         <div className="space-y-4">
@@ -33,11 +33,11 @@ function AppearanceSettings() {
             value={bgUrl}
             onChange={e => setBgUrl(e.target.value)}
             placeholder="https://images.unsplash.com/..."
-            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none text-sm"
+            className="w-full px-4 py-3 bg-stone-800 border border-stone-700 text-stone-100 placeholder-stone-500 rounded-lg focus:border-accent focus:outline-none text-sm"
           />
 
           {bgUrl && (
-            <div className="rounded-xl overflow-hidden border border-gray-200 h-48 bg-gray-100">
+            <div className="rounded-xl overflow-hidden border border-stone-700 h-48 bg-stone-800">
               <img
                 src={bgUrl}
                 alt="Background preview"
@@ -50,14 +50,14 @@ function AppearanceSettings() {
           <div className="flex gap-3">
             <button
               onClick={handleSave}
-              className="bg-primary text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-secondary transition-all"
+              className="bg-accent text-stone-900 px-6 py-2.5 rounded-lg font-semibold hover:brightness-110 transition-all"
             >
               {saved ? '✓ Saved' : 'Save'}
             </button>
             {bgUrl && (
               <button
                 onClick={() => { setBgUrl(''); settingsAPI.set('background_image_url', ''); }}
-                className="bg-gray-200 text-gray-600 px-6 py-2.5 rounded-lg font-semibold hover:bg-gray-300 transition-all"
+                className="bg-stone-700 text-stone-300 px-6 py-2.5 rounded-lg font-semibold hover:bg-stone-600 transition-all"
               >
                 Remove
               </button>

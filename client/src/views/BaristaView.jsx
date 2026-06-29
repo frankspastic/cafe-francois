@@ -144,70 +144,38 @@ function BaristaView() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hidden audio element for notifications */}
+    <div className="min-h-screen bg-stone-950">
       <audio ref={audioRef} src="/notification.mp3" preload="auto" />
 
       {/* Header with Tabs */}
-      <div className="bg-primary text-white shadow-lg">
+      <div className="bg-stone-900 border-b border-stone-800">
         <div className="max-w-7xl mx-auto px-6 py-4">
-          <h1 className="text-3xl font-bold mb-4">☕ Barista Dashboard</h1>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setActiveTab(TABS.ORDERS)}
-              className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-                activeTab === TABS.ORDERS
-                  ? 'bg-white text-primary'
-                  : 'bg-primary-light hover:bg-secondary text-white'
-              }`}
-            >
-              Active Orders
-              {orders.length > 0 && (
-                <span className="ml-2 bg-red-500 text-white rounded-full px-2 py-1 text-xs">
-                  {orders.length}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab(TABS.MENU)}
-              className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-                activeTab === TABS.MENU
-                  ? 'bg-white text-primary'
-                  : 'bg-primary-light hover:bg-secondary text-white'
-              }`}
-            >
-              Menu Management
-            </button>
-            <button
-              onClick={() => setActiveTab(TABS.ARCHIVED)}
-              className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-                activeTab === TABS.ARCHIVED
-                  ? 'bg-white text-primary'
-                  : 'bg-primary-light hover:bg-secondary text-white'
-              }`}
-            >
-              Order History
-            </button>
-            <button
-              onClick={() => setActiveTab(TABS.QR)}
-              className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-                activeTab === TABS.QR
-                  ? 'bg-white text-primary'
-                  : 'bg-primary-light hover:bg-secondary text-white'
-              }`}
-            >
-              QR Code
-            </button>
-            <button
-              onClick={() => setActiveTab(TABS.APPEARANCE)}
-              className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-                activeTab === TABS.APPEARANCE
-                  ? 'bg-white text-primary'
-                  : 'bg-primary-light hover:bg-secondary text-white'
-              }`}
-            >
-              Appearance
-            </button>
+          <h1 className="text-2xl font-bold text-stone-100 tracking-tight mb-4">Café François — Barista</h1>
+          <div className="flex gap-2 flex-wrap">
+            {[
+              { tab: TABS.ORDERS, label: 'Active Orders', badge: orders.length },
+              { tab: TABS.MENU, label: 'Menu' },
+              { tab: TABS.ARCHIVED, label: 'Order History' },
+              { tab: TABS.QR, label: 'QR Code' },
+              { tab: TABS.APPEARANCE, label: 'Appearance' },
+            ].map(({ tab, label, badge }) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-sm ${
+                  activeTab === tab
+                    ? 'bg-accent text-stone-900'
+                    : 'bg-stone-800 text-stone-400 hover:bg-stone-700 hover:text-stone-200'
+                }`}
+              >
+                {label}
+                {badge > 0 && (
+                  <span className="ml-2 bg-red-500 text-white rounded-full px-2 py-0.5 text-xs">
+                    {badge}
+                  </span>
+                )}
+              </button>
+            ))}
           </div>
         </div>
       </div>

@@ -35,10 +35,10 @@ function SortableRow({ item, onEdit, onDelete }) {
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={`flex items-center gap-3 rounded-lg border px-4 py-3 ${
         isDragging
-          ? 'opacity-40 shadow-xl border-primary bg-white'
+          ? 'opacity-40 shadow-xl border-accent bg-stone-900'
           : item.available
-          ? 'bg-white border-gray-200 shadow-sm'
-          : 'bg-gray-50 border-gray-200 shadow-sm opacity-60'
+          ? 'bg-stone-900 border-stone-800'
+          : 'bg-stone-900 border-stone-800 opacity-50'
       }`}
     >
       <button
@@ -50,24 +50,24 @@ function SortableRow({ item, onEdit, onDelete }) {
         <GripIcon />
       </button>
       <div className="flex-1 min-w-0 flex items-center gap-2">
-        <span className={`font-semibold ${item.available ? 'text-gray-800' : 'text-gray-400'}`}>{item.name}</span>
+        <span className={`font-semibold ${item.available ? 'text-stone-100' : 'text-stone-500'}`}>{item.name}</span>
         {!item.available && (
-          <span className="text-xs bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full font-medium">Hidden</span>
+          <span className="text-xs bg-stone-700 text-stone-400 px-2 py-0.5 rounded-full font-medium">Hidden</span>
         )}
         {item.description && (
-          <span className="text-gray-400 text-sm truncate hidden sm:inline">{item.description}</span>
+          <span className="text-stone-500 text-sm truncate hidden sm:inline">{item.description}</span>
         )}
       </div>
       <div className="flex gap-2 flex-shrink-0">
         <button
           onClick={() => onEdit(item)}
-          className="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all"
+          className="bg-blue-900/30 text-blue-400 hover:bg-blue-900/50 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all"
         >
           Edit
         </button>
         <button
           onClick={() => onDelete(item.id)}
-          className="bg-red-50 text-red-500 hover:bg-red-100 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all"
+          className="bg-red-900/30 text-red-400 hover:bg-red-900/50 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all"
         >
           Remove
         </button>
@@ -94,9 +94,9 @@ function SortableCategory({ category, itemCount, children }) {
         >
           <GripIcon />
         </button>
-        <h3 className="text-lg font-bold text-gray-700">{category.name}</h3>
-        <div className="flex-1 h-px bg-gray-200" />
-        <span className="text-xs text-gray-400">{itemCount} {itemCount === 1 ? 'item' : 'items'} — drag to reorder</span>
+        <h3 className="text-lg font-bold text-stone-200">{category.name}</h3>
+        <div className="flex-1 h-px bg-stone-800" />
+        <span className="text-xs text-stone-500">{itemCount} {itemCount === 1 ? 'item' : 'items'} — drag to reorder</span>
       </div>
       {children}
     </div>
@@ -213,41 +213,41 @@ function MenuManagement() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-3xl font-bold text-gray-800">Menu Management</h2>
+        <h2 className="text-3xl font-bold text-stone-100">Menu Management</h2>
         <button
           onClick={handleNew}
-          className="bg-primary text-white px-6 py-3 rounded-lg font-semibold hover:bg-secondary transition-all"
+          className="bg-accent text-stone-900 px-6 py-3 rounded-lg font-semibold hover:brightness-110 transition-all"
         >
           + Add New Item
         </button>
       </div>
 
       {isEditing ? (
-        <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
-          <h3 className="text-2xl font-bold mb-6">
+        <div className="bg-stone-900 border border-stone-800 rounded-xl shadow-lg p-8 mb-6">
+          <h3 className="text-2xl font-bold text-stone-100 mb-6">
             {editingItem ? 'Edit Menu Item' : 'New Menu Item'}
           </h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Name</label>
+                <label className="block text-sm font-semibold text-stone-400 mb-2">Name</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
-                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none"
+                  className="w-full px-4 py-2 bg-stone-800 border border-stone-700 text-stone-100 rounded-lg focus:border-accent focus:outline-none"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Category</label>
+                <label className="block text-sm font-semibold text-stone-400 mb-2">Category</label>
                 <input
                   type="text"
                   list="category-options"
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   placeholder="e.g. Coffee, Tea, Food"
-                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none"
+                  className="w-full px-4 py-2 bg-stone-800 border border-stone-700 text-stone-100 placeholder-stone-500 rounded-lg focus:border-accent focus:outline-none"
                 />
                 <datalist id="category-options">
                   {categories.map(cat => <option key={cat.id} value={cat.name} />)}
@@ -255,21 +255,21 @@ function MenuManagement() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+              <label className="block text-sm font-semibold text-stone-400 mb-2">Description</label>
               <textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={3}
-                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none"
+                className="w-full px-4 py-2 bg-stone-800 border border-stone-700 text-stone-100 rounded-lg focus:border-accent focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Image URL (optional)</label>
+              <label className="block text-sm font-semibold text-stone-400 mb-2">Image URL (optional)</label>
               <input
                 type="text"
                 value={formData.image_url}
                 onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none"
+                className="w-full px-4 py-2 bg-stone-800 border border-stone-700 text-stone-100 rounded-lg focus:border-accent focus:outline-none"
               />
             </div>
             <div className="flex items-center gap-3">
@@ -277,12 +277,12 @@ function MenuManagement() {
                 type="checkbox"
                 checked={formData.available === 1}
                 onChange={(e) => setFormData({ ...formData, available: e.target.checked ? 1 : 0 })}
-                className="w-5 h-5"
+                className="w-5 h-5 accent-[#D4A574]"
               />
-              <label className="text-sm font-semibold text-gray-700">Available to order</label>
+              <label className="text-sm font-semibold text-stone-300">Available to order</label>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Customization Options</label>
+              <label className="block text-sm font-semibold text-stone-400 mb-2">Customization Options</label>
               {[
                 { key: 'size', label: 'Size' },
                 { key: 'milk', label: 'Milk Type' },
@@ -298,17 +298,17 @@ function MenuManagement() {
                         : formData.allowed_customization_types.filter(t => t !== key);
                       setFormData({ ...formData, allowed_customization_types: types });
                     }}
-                    className="w-5 h-5"
+                    className="w-5 h-5 accent-[#D4A574]"
                   />
-                  <span className="text-sm font-semibold text-gray-700">{label}</span>
+                  <span className="text-sm font-semibold text-stone-300">{label}</span>
                 </label>
               ))}
             </div>
             <div className="flex gap-3 pt-4">
-              <button type="button" onClick={handleCancel} className="flex-1 px-6 py-3 bg-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-400 transition-all">
+              <button type="button" onClick={handleCancel} className="flex-1 px-6 py-3 bg-stone-700 text-stone-300 rounded-lg font-semibold hover:bg-stone-600 transition-all">
                 Cancel
               </button>
-              <button type="submit" className="flex-1 px-6 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-secondary transition-all">
+              <button type="submit" className="flex-1 px-6 py-3 bg-accent text-stone-900 rounded-lg font-semibold hover:brightness-110 transition-all">
                 Save
               </button>
             </div>
