@@ -14,6 +14,11 @@ body {
 
 #root {
   min-height: 100vh;
+  /* Launched from the home screen, the status bar is translucent (see
+     index.html) and overlaps the page, so pad content clear of it and of the
+     home indicator. A no-op in a normal browser tab, where the inset is 0. */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* Prevent text selection on kiosk mode */
