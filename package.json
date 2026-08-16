@@ -13,12 +13,23 @@
     "dev:client": "npm run dev --workspace=client",
     "install:all": "npm install && npm install --workspace=client && npm install --workspace=server",
     "build": "npm run build --workspace=client",
-    "start": "npm start --workspace=server"
+    "start": "npm start --workspace=server",
+    "test": "npm test --workspace=server",
+    "lint": "eslint ."
   },
-  "keywords": ["coffee", "ordering", "kiosk"],
+  "keywords": [
+    "coffee",
+    "ordering",
+    "kiosk"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "@eslint/js": "^9.39.5",
+    "concurrently": "^8.2.2",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.11.0"
   }
 }

@@ -81,10 +81,9 @@ A web-based coffee ordering system for home use, featuring a kiosk mode for iPad
 ## Default Configuration
 
 ### Barista PIN
-The default PIN is `1234`. To change it:
-1. Open `client/src/views/BaristaView.jsx`
-2. Find the line `const BARISTA_PIN = '1234';`
-3. Change to your desired 4-digit PIN
+The default PIN is `1234`. Change it from **Barista → Appearance → Barista PIN**.
+It is stored as a bcrypt hash in the database, so it survives redeploys and is
+never exposed to the browser. See [Security model](#security-model) if you forget it.
 
 ### Default Menu
 The app comes with 7 default coffee drinks:
@@ -189,20 +188,67 @@ Add an audio file at `client/public/notification.mp3` for new order alerts.
 
 ## Deployment
 
-For production deployment:
+The app deploys as a **single service**: `npm run build` compiles the client, and
+the Express server serves the built files alongside the API, so there is only one
+process and one origin in production.
 
-1. Build the frontend:
-   ```bash
-   cd client
-   npm run build
-   ```
+```bash
+npm run build   # build the client into client/dist
+npm start       # serve API + client on $PORT
+```
 
-2. Serve the built files with the Express backend:
-   Update `server/server.js` to serve static files from `client/dist`
+### Railway
 
-3. Set environment variables:
-   - `PORT`: Server port (default: 3000)
-   - Consider moving the PIN to an environment variable
+1. Deploy from the GitHub repo with the **root directory** set to `/`.
+2. Add a **volume** mounted at `/data` — without it, the SQLite database is wiped
+   on every deploy.
+3. Set `DB_PATH=/data/cafe-francois.db`. Leave `PORT` alone; Railway injects it.
+4. Do not set `LABEL_PRINTER_NAME` — label printing talks to a local CUPS printer
+   and no-ops in the cloud.
+5. Add the custom domain in Railway, then point a CNAME at the target it shows.
+
+### Environment variables
+
+| Variable | Purpose |
+| --- | --- |
+| `PORT` | Server port (default 3000; Railway sets this) |
+| `DB_PATH` | SQLite file location (default `server/db/cafe-francois.db`) |
+| `ALLOWED_ORIGINS` | Comma-separated CORS allowlist (default `http://localhost:5173`) |
+| `BARISTA_PIN` | Seeds the initial PIN on first run only |
+| `RESET_BARISTA_PIN` | Forces the PIN back to this value on startup — see below |
+| `LABEL_PRINTER_NAME` | CUPS printer name; unset disables printing |
+| `DEBUG` | `true` for verbose order/database logging |
+
+### Backups
+
+The database is a single SQLite file. Download a copy any time from
+**Barista → Appearance → Backup**, and keep one before a redeploy or a big menu
+change.
+
+## Security model
+
+The barista dashboard is PIN-protected, and the API enforces it:
+
+- The PIN is stored as a **bcrypt hash** in the database, never in the client bundle.
+- A correct PIN returns a **session token**; every menu, settings, and order-management
+  endpoint requires it. Placing an order is the only public write.
+- PIN attempts are **rate limited** with a growing lockout, since a 4-digit PIN is
+  only 10,000 combinations.
+- Order events are delivered over **scoped socket rooms** — baristas see all orders,
+  a guest sees only their own, and an unauthenticated listener sees nothing.
+
+### Forgot the PIN?
+
+Set `RESET_BARISTA_PIN` to a new 4-digit value and restart the server. It overwrites
+the stored PIN on startup and logs a warning. **Remove the variable afterward** —
+otherwise it resets the PIN on every restart.
+
+## Testing
+
+```bash
+npm test    # server tests (node:test)
+npm run lint
+```
 
 ## Troubleshooting
 

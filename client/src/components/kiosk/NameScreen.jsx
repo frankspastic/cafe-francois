@@ -15,7 +15,7 @@ function NameScreen({ onSubmit }) {
       <div className="bg-stone-900 border border-stone-800 rounded-3xl shadow-2xl p-12 max-w-2xl w-full">
         <div className="text-center mb-10">
           <div className="text-6xl mb-4">👤</div>
-          <h2 className="text-4xl font-bold text-stone-100">What's your name?</h2>
+          <h2 className="text-4xl font-bold text-stone-100">What&rsquo;s your name?</h2>
           <p className="text-stone-500 mt-2">So we know whose coffee is whose</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-5">

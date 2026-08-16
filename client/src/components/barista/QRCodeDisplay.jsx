@@ -62,7 +62,7 @@ function QRCodeDisplay() {
           <ul className="text-blue-800 space-y-2">
             <li>• Print this QR code and display it prominently</li>
             <li>• Guests can scan with their phone camera to order</li>
-            <li>• They'll receive notifications when their order is ready</li>
+            <li>• They&rsquo;ll receive notifications when their order is ready</li>
           </ul>
         </div>
       </div>
