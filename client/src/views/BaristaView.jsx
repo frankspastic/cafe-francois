@@ -5,7 +5,7 @@ import MenuManagement from '../components/barista/MenuManagement';
 import ArchivedOrders from '../components/barista/ArchivedOrders';
 import QRCodeDisplay from '../components/barista/QRCodeDisplay';
 import AppearanceSettings from '../components/barista/AppearanceSettings';
-import { ordersAPI, baristaAPI } from '../services/api';
+import { ordersAPI, baristaAPI, setUnauthorizedHandler } from '../services/api';
 import socketService from '../services/socket';
 import { useWakeLock } from '../hooks/useWakeLock';
 
@@ -19,13 +19,66 @@ const TABS = {
 
 function BaristaView() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isRestoringSession, setIsRestoringSession] = useState(true);
   const [activeTab, setActiveTab] = useState(TABS.ORDERS);
   const [orders, setOrders] = useState([]);
   const [archivedOrders, setArchivedOrders] = useState([]);
   const audioRef = useRef(null);
+  const audioUnlockedRef = useRef(false);
 
   // Enable wake lock to prevent iPad from sleeping
   useWakeLock();
+
+  // iOS refuses to play audio until the element has been started inside a real
+  // user gesture, so the new-order chime stays silent unless we prime it on a
+  // tap. Called from the PIN keypad and from the first tap on the dashboard.
+  const unlockAudio = () => {
+    if (!audioRef.current) {
+      audioRef.current = new Audio('/notification.mp3');
+      audioRef.current.preload = 'auto';
+    }
+    if (audioUnlockedRef.current) return;
+    audioRef.current
+      .play()
+      .then(() => {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        audioUnlockedRef.current = true;
+      })
+      .catch(() => {
+        // Still locked — the next gesture will try again.
+      });
+  };
+
+  // Restoring a session skips the keypad, so catch the first tap anywhere.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const handler = () => unlockAudio();
+    document.addEventListener('pointerdown', handler, { once: true });
+    return () => document.removeEventListener('pointerdown', handler);
+  }, [isAuthenticated]);
+
+  // A stored token means a reload doesn't have to ask for the PIN again.
+  useEffect(() => {
+    baristaAPI.restoreSession()
+      .then(valid => {
+        if (valid) {
+          setIsAuthenticated(true);
+          socketService.joinBarista();
+        }
+      })
+      .finally(() => setIsRestoringSession(false));
+  }, []);
+
+  // If the server ever rejects our token, drop straight back to the PIN screen
+  // rather than leaving a dashboard that silently fails every action.
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      setIsAuthenticated(false);
+      socketService.leaveBarista();
+    });
+    return () => setUnauthorizedHandler(null);
+  }, []);
 
   // Load orders
   useEffect(() => {
@@ -63,17 +116,12 @@ function BaristaView() {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    console.log('[Barista] Setting up socket listeners...');
-    const socket = socketService.connect();
+    socketService.connect();
 
     const handleNewOrder = (order) => {
-      console.log('[Barista] New order received via socket:', order);
-      setOrders(prev => {
-        console.log('[Barista] Current orders:', prev);
-        const newOrders = [order, ...prev];
-        console.log('[Barista] Updated orders:', newOrders);
-        return newOrders;
-      });
+      // The board lists oldest first, so a new order belongs at the end —
+      // otherwise the live view and a reloaded view disagree on the queue.
+      setOrders(prev => (prev.some(o => o.id === order.id) ? prev : [...prev, order]));
 
       // Play notification sound
       if (audioRef.current) {
@@ -90,23 +138,26 @@ function BaristaView() {
     };
 
     const handleOrderUpdate = (updatedOrder) => {
-      console.log('[Barista] Order status updated via socket:', updatedOrder);
       setOrders(prev => {
         const filtered = prev.filter(o => o.id !== updatedOrder.id);
         if (updatedOrder.status === 'completed' || updatedOrder.status === 'cancelled') {
           if (activeTab === TABS.ARCHIVED) {
-            ordersAPI.getArchived().then(setArchivedOrders);
+            ordersAPI.getArchived()
+              .then(setArchivedOrders)
+              .catch(error => console.error('Error refreshing history:', error));
           }
           return filtered;
         }
-        return [updatedOrder, ...filtered];
+        // Keep the order in its original queue position rather than jumping it
+        // to the front when its status changes.
+        const index = prev.findIndex(o => o.id === updatedOrder.id);
+        if (index === -1) return [...filtered, updatedOrder];
+        return [...filtered.slice(0, index), updatedOrder, ...filtered.slice(index)];
       });
     };
 
-    console.log('[Barista] Registering socket event handlers...');
     socketService.on('new-order', handleNewOrder);
     socketService.on('order-status-updated', handleOrderUpdate);
-    console.log('[Barista] Socket event handlers registered');
 
     // Request notification permission
     if ('Notification' in window && Notification.permission === 'default') {
@@ -114,24 +165,24 @@ function BaristaView() {
     }
 
     return () => {
-      console.log('[Barista] Cleaning up socket listeners');
       socketService.off('new-order', handleNewOrder);
       socketService.off('order-status-updated', handleOrderUpdate);
     };
   }, [isAuthenticated, activeTab]);
 
   const handleLogin = async (pin) => {
-    try {
-      const { valid } = await baristaAPI.verifyPin(pin);
-      if (valid) {
-        setIsAuthenticated(true);
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('Error verifying PIN:', error);
-      return false;
+    const result = await baristaAPI.verifyPin(pin);
+    if (result.valid) {
+      setIsAuthenticated(true);
+      socketService.joinBarista();
     }
+    return result;
+  };
+
+  const handleLogout = async () => {
+    await baristaAPI.logout();
+    socketService.leaveBarista();
+    setIsAuthenticated(false);
   };
 
   const handleUpdateStatus = async (orderId, newStatus) => {
@@ -142,18 +193,33 @@ function BaristaView() {
     }
   };
 
+  if (isRestoringSession) {
+    return (
+      <div className="min-h-screen bg-stone-950 flex items-center justify-center">
+        <p className="text-stone-500 text-lg">Loading…</p>
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
-    return <PinLogin onLogin={handleLogin} />;
+    return <PinLogin onLogin={handleLogin} onUserGesture={unlockAudio} />;
   }
 
   return (
     <div className="min-h-screen bg-stone-950">
-      <audio ref={audioRef} src="/notification.mp3" preload="auto" />
 
       {/* Header with Tabs */}
       <div className="bg-stone-900 border-b border-stone-800">
         <div className="max-w-7xl mx-auto px-6 py-4">
-          <h1 className="text-2xl font-bold text-stone-100 tracking-tight mb-4">Café François — Barista</h1>
+          <div className="flex justify-between items-center mb-4">
+            <h1 className="text-2xl font-bold text-stone-100 tracking-tight">Café François — Barista</h1>
+            <button
+              onClick={handleLogout}
+              className="text-sm text-stone-500 hover:text-stone-300 font-semibold px-4 py-2 rounded-lg hover:bg-stone-800 transition-all"
+            >
+              Sign out
+            </button>
+          </div>
           <div className="flex gap-2 flex-wrap">
             {[
               { tab: TABS.ORDERS, label: 'Active Orders', badge: orders.length },

@@ -36,7 +36,9 @@ function OrderBoard({ orders, onUpdateStatus }) {
         <div className="flex justify-between items-start mb-4">
           <div>
             <h3 className="text-2xl font-bold text-stone-100">{order.customer_name}</h3>
-            <p className="text-sm text-stone-500 mt-0.5">{formatTime(order.created_at)}</p>
+            <p className="text-sm text-stone-500 mt-0.5">
+              {order.daily_number ? `#${order.daily_number} · ` : ''}{formatTime(order.created_at)}
+            </p>
           </div>
           <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
             isPending ? 'bg-amber-500/20 text-amber-400' : 'bg-blue-500/20 text-blue-400'

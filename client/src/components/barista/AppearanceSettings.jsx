@@ -142,6 +142,20 @@ function AppearanceSettings() {
           </button>
         </form>
       </div>
+
+      <div className="bg-stone-900 border border-stone-800 rounded-xl p-8 max-w-2xl mt-8">
+        <h3 className="text-lg font-bold text-stone-200 mb-1">Backup</h3>
+        <p className="text-sm text-stone-500 mb-4">
+          Download a copy of the database — menu, settings, and order history. Keep one
+          around before a redeploy or a big menu change.
+        </p>
+        <a
+          href={baristaAPI.backupUrl()}
+          className="inline-block bg-stone-700 text-stone-200 px-6 py-2.5 rounded-lg font-semibold hover:bg-stone-600 transition-all"
+        >
+          Download backup
+        </a>
+      </div>
     </div>
   );
 }

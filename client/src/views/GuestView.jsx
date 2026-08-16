@@ -14,6 +14,28 @@ const SCREENS = {
   STATUS: 'status'
 };
 
+// Guests refresh, lock their phone, or tap away mid-wait. Remember the order
+// they placed so they come back to its status instead of an empty menu.
+const ACTIVE_ORDER_KEY = 'cafe-francois-active-order';
+
+function readStoredOrderId() {
+  try {
+    const raw = localStorage.getItem(ACTIVE_ORDER_KEY);
+    return raw ? Number(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function storeOrderId(id) {
+  try {
+    if (id) localStorage.setItem(ACTIVE_ORDER_KEY, String(id));
+    else localStorage.removeItem(ACTIVE_ORDER_KEY);
+  } catch {
+    // Private browsing — status tracking just won't survive a reload.
+  }
+}
+
 function GuestView() {
   const [currentScreen, setCurrentScreen] = useState(SCREENS.MENU);
   const [menuItems, setMenuItems] = useState([]);
@@ -23,7 +45,7 @@ function GuestView() {
   const [currentOrder, setCurrentOrder] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load menu and customizations
+  // Load menu, customizations, and any order still in progress from a previous visit
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -33,6 +55,22 @@ function GuestView() {
         ]);
         setMenuItems(menuData);
         setCustomizations(customData);
+
+        const storedId = readStoredOrderId();
+        if (storedId) {
+          try {
+            const order = await ordersAPI.getById(storedId);
+            // Completed orders are done with — don't drag guests back to them.
+            if (order && order.status !== 'completed' && order.status !== 'cancelled') {
+              setCurrentOrder(order);
+              setCurrentScreen(SCREENS.STATUS);
+            } else {
+              storeOrderId(null);
+            }
+          } catch {
+            storeOrderId(null); // Order was deleted or the id is stale.
+          }
+        }
       } catch (error) {
         console.error('Error loading menu:', error);
       } finally {
@@ -43,25 +81,28 @@ function GuestView() {
     loadData();
   }, []);
 
-  // Listen for order status updates
+  // Listen for updates to this guest's order
   useEffect(() => {
     if (!currentOrder) return;
 
-    const socket = socketService.connect();
+    const orderId = currentOrder.id;
+    socketService.subscribeToOrder(orderId);
 
     const handleOrderUpdate = (updatedOrder) => {
-      if (updatedOrder.id === currentOrder.id) {
-        setCurrentOrder(updatedOrder);
+      if (updatedOrder.id !== orderId) return;
 
-        // Show notification when order is ready
-        if (updatedOrder.status === 'completed') {
-          if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('Your order is ready!', {
-              body: 'Your coffee is ready for pickup.',
-              icon: '/coffee-icon.svg'
-            });
-          }
+      setCurrentOrder(updatedOrder);
+
+      if (updatedOrder.status === 'completed') {
+        storeOrderId(null);
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('Your order is ready!', {
+            body: 'Your coffee is ready for pickup.',
+            icon: '/coffee-icon.svg'
+          });
         }
+      } else if (updatedOrder.status === 'cancelled') {
+        storeOrderId(null);
       }
     };
 
@@ -75,7 +116,10 @@ function GuestView() {
     return () => {
       socketService.off('order-status-updated', handleOrderUpdate);
     };
-  }, [currentOrder]);
+    // Only re-subscribe when the tracked order changes, not on every status tick —
+    // depending on the whole object would tear down the listener on each update.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentOrder?.id]);
 
   const handleSelectItem = (item) => {
     setSelectedItem(item);
@@ -113,16 +157,19 @@ function GuestView() {
       };
 
       const order = await ordersAPI.create(orderData);
+      storeOrderId(order.id);
       setCurrentOrder(order);
       setCart([]);
       setCurrentScreen(SCREENS.STATUS);
     } catch (error) {
       console.error('Error submitting order:', error);
-      alert('Failed to submit order. Please try again.');
+      alert(error.message || 'Failed to submit order. Please try again.');
     }
   };
 
   const handleNewOrder = () => {
+    storeOrderId(null);
+    socketService.unsubscribeFromOrder();
     setCurrentOrder(null);
     setCart([]);
     setCurrentScreen(SCREENS.MENU);

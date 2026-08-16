@@ -1,23 +1,37 @@
 import { useState } from 'react';
 
-function PinLogin({ onLogin }) {
+function PinLogin({ onLogin, onUserGesture }) {
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
+  const [isChecking, setIsChecking] = useState(false);
 
   const handlePinClick = (digit) => {
-    if (pin.length < 4) {
-      const newPin = pin + digit;
-      setPin(newPin);
-      setError('');
-      if (newPin.length === 4) {
-        setTimeout(async () => {
-          const success = await onLogin(newPin);
-          if (!success) {
-            setError('Invalid PIN');
+    // Runs inside the tap itself, which is the only moment iOS lets us prime
+    // the notification sound.
+    if (onUserGesture) onUserGesture();
+
+    if (isChecking || pin.length >= 4) return;
+
+    const newPin = pin + digit;
+    setPin(newPin);
+    setError('');
+
+    if (newPin.length === 4) {
+      setIsChecking(true);
+      setTimeout(async () => {
+        try {
+          const result = await onLogin(newPin);
+          if (!result?.valid) {
+            setError(result?.message || 'Invalid PIN');
             setPin('');
           }
-        }, 100);
-      }
+        } catch (err) {
+          setError('Could not reach the server');
+          setPin('');
+        } finally {
+          setIsChecking(false);
+        }
+      }, 100);
     }
   };
 

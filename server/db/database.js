@@ -2,7 +2,7 @@ import initSqlJs from 'sql.js';
 import bcrypt from 'bcryptjs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, renameSync, mkdirSync } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -13,6 +13,9 @@ const dbPath = process.env.DB_PATH || join(__dirname, 'cafe-francois.db');
 // Initialize SQL.js and database
 export async function initializeDatabase() {
   const SQL = await initSqlJs();
+
+  // When DB_PATH points at a mounted volume, the directory may not exist yet.
+  mkdirSync(dirname(dbPath), { recursive: true });
 
   // Load existing database or create new one
   if (existsSync(dbPath)) {
@@ -94,6 +97,37 @@ export async function initializeDatabase() {
       key TEXT PRIMARY KEY,
       value TEXT
     )
+  `);
+
+  // Migration: daily order number, so guests see "Order #3" rather than "#1247".
+  try {
+    db.run('ALTER TABLE orders ADD COLUMN daily_number INTEGER');
+  } catch (e) {
+    // Column already exists — safe to ignore
+  }
+
+  // Migration: normalise timestamps to ISO-8601 with an explicit UTC marker.
+  //
+  // SQLite's CURRENT_TIMESTAMP writes "YYYY-MM-DD HH:MM:SS" in UTC, but JavaScript
+  // parses that bare format as *local* time, so every displayed order time was off
+  // by the local UTC offset. Rewrite old rows to "YYYY-MM-DDTHH:MM:SSZ", which
+  // parses unambiguously; new rows are written in that form on insert.
+  db.run(`
+    UPDATE orders SET created_at = REPLACE(created_at, ' ', 'T') || 'Z'
+    WHERE created_at IS NOT NULL AND created_at NOT LIKE '%Z'
+  `);
+  db.run(`
+    UPDATE orders SET completed_at = REPLACE(completed_at, ' ', 'T') || 'Z'
+    WHERE completed_at IS NOT NULL AND completed_at NOT LIKE '%Z'
+  `);
+
+  // Backfill daily numbers for existing orders, grouped by calendar day.
+  db.run(`
+    UPDATE orders SET daily_number = (
+      SELECT COUNT(*) FROM orders AS o2
+      WHERE DATE(o2.created_at) = DATE(orders.created_at) AND o2.id <= orders.id
+    )
+    WHERE daily_number IS NULL
   `);
 
   // Seed the barista PIN hash on first run (BARISTA_PIN is only used as the initial value —
@@ -202,12 +236,24 @@ export function seedDatabase() {
   console.log('Database seeded successfully');
 }
 
-// Save database to file
+// Save database to file.
+//
+// sql.js rewrites the whole file on every save, so writing straight to dbPath
+// leaves a truncated, unrecoverable database if the process dies mid-write (a
+// redeploy, an OOM kill). Write to a temp file and rename instead — rename is
+// atomic, so the real file is either the old version or the new one, never half.
 export function saveDatabase() {
-  if (db) {
-    const data = db.export();
-    writeFileSync(dbPath, data);
-  }
+  if (!db) return;
+  const data = db.export();
+  const tempPath = `${dbPath}.tmp`;
+  writeFileSync(tempPath, data);
+  renameSync(tempPath, dbPath);
+}
+
+// Raw bytes of the current database, for the backup download.
+export function exportDatabase() {
+  if (!db) throw new Error('Database not initialized');
+  return Buffer.from(db.export());
 }
 
 // Helper functions for prepared statements
@@ -278,9 +324,7 @@ function getLastInsertId() {
     console.error('Failed to get last insert ID, result:', result);
     return 0;
   }
-  const id = result[0].values[0][0];
-  console.log('[Database] Last insert ID:', id);
-  return id;
+  return result[0].values[0][0];
 }
 
 export default {

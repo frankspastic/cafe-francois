@@ -1,10 +1,14 @@
 import express from 'express';
 import { Menu } from '../models/Menu.js';
+import { requireBarista } from '../auth.js';
 
 const router = express.Router();
 
-// Get all menu items (admin=true returns unavailable items too)
-router.get('/', (req, res) => {
+// Get all menu items (admin=true returns unavailable items too, barista only)
+router.get('/', (req, res, next) => {
+  if (req.query.admin === 'true') return requireBarista(req, res, next);
+  next();
+}, (req, res) => {
   try {
     const items = req.query.admin === 'true' ? Menu.getAllAdmin() : Menu.getAll();
     res.json(items);
@@ -23,7 +27,7 @@ router.get('/categories', (req, res) => {
 });
 
 // Reorder categories
-router.patch('/categories/reorder', (req, res) => {
+router.patch('/categories/reorder', requireBarista, (req, res) => {
   try {
     Menu.reorderCategories(req.body.items);
     res.json({ message: 'Reordered' });
@@ -43,7 +47,7 @@ router.get('/customizations', (req, res) => {
 });
 
 // Create customization option
-router.post('/customizations', (req, res) => {
+router.post('/customizations', requireBarista, (req, res) => {
   try {
     const { type, name } = req.body;
     const id = Menu.createCustomization(type, name);
@@ -54,7 +58,7 @@ router.post('/customizations', (req, res) => {
 });
 
 // Delete customization option
-router.delete('/customizations/:id', (req, res) => {
+router.delete('/customizations/:id', requireBarista, (req, res) => {
   try {
     Menu.deleteCustomization(req.params.id);
     res.json({ message: 'Customization option deleted' });
@@ -64,7 +68,7 @@ router.delete('/customizations/:id', (req, res) => {
 });
 
 // Bulk reorder menu items
-router.patch('/reorder', (req, res) => {
+router.patch('/reorder', requireBarista, (req, res) => {
   try {
     const { items } = req.body;
     Menu.reorder(items);
@@ -88,7 +92,7 @@ router.get('/:id', (req, res) => {
 });
 
 // Create new menu item
-router.post('/', (req, res) => {
+router.post('/', requireBarista, (req, res) => {
   try {
     const id = Menu.create(req.body);
     const item = Menu.getById(id);
@@ -99,7 +103,7 @@ router.post('/', (req, res) => {
 });
 
 // Update menu item
-router.put('/:id', (req, res) => {
+router.put('/:id', requireBarista, (req, res) => {
   try {
     Menu.update(req.params.id, req.body);
     const item = Menu.getById(req.params.id);
@@ -110,7 +114,7 @@ router.put('/:id', (req, res) => {
 });
 
 // Delete menu item
-router.delete('/:id', (req, res) => {
+router.delete('/:id', requireBarista, (req, res) => {
   try {
     Menu.delete(req.params.id);
     res.json({ message: 'Menu item deleted successfully' });

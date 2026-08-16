@@ -15,12 +15,13 @@ export function formatLabel(order) {
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
+    timeZone: process.env.TZ || undefined,
   });
 
   const lines = [
     '',
     center('CAFE FRANCOIS'),
-    center(`ORDER #${order.id}  ${time}`),
+    center(`ORDER #${order.daily_number ?? order.id}  ${time}`),
     SEPARATOR,
     center(order.customer_name.toUpperCase()),
     '',

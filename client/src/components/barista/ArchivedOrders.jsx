@@ -34,7 +34,7 @@ function ArchivedOrders({ orders }) {
       {filteredOrders.length === 0 ? (
         <div className="text-center py-20">
           <p className="text-2xl text-stone-500">
-            {searchTerm ? 'No orders found' : 'No completed orders yet'}
+            {searchTerm ? 'No orders found' : 'No past orders yet'}
           </p>
         </div>
       ) : (
@@ -43,13 +43,28 @@ function ArchivedOrders({ orders }) {
             <div key={order.id} className="bg-stone-900 border border-stone-800 rounded-xl shadow-md p-6">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="text-2xl font-bold text-stone-100">{order.customer_name}</h3>
+                  <h3 className="text-2xl font-bold text-stone-100">
+                    {order.customer_name}
+                    {order.daily_number && (
+                      <span className="text-stone-500 font-semibold text-lg ml-2">#{order.daily_number}</span>
+                    )}
+                  </h3>
                   <p className="text-sm text-stone-500">Ordered: {formatDateTime(order.created_at)}</p>
-                  <p className="text-sm text-stone-500">Completed: {formatDateTime(order.completed_at)}</p>
+                  {order.completed_at && (
+                    <p className="text-sm text-stone-500">
+                      {order.status === 'cancelled' ? 'Cancelled' : 'Completed'}: {formatDateTime(order.completed_at)}
+                    </p>
+                  )}
                 </div>
-                <span className="bg-green-500/20 text-green-400 px-4 py-2 rounded-full text-sm font-semibold">
-                  Completed
-                </span>
+                {order.status === 'cancelled' ? (
+                  <span className="bg-red-500/20 text-red-400 px-4 py-2 rounded-full text-sm font-semibold">
+                    Cancelled
+                  </span>
+                ) : (
+                  <span className="bg-green-500/20 text-green-400 px-4 py-2 rounded-full text-sm font-semibold">
+                    Completed
+                  </span>
+                )}
               </div>
               <div className="space-y-2">
                 {order.items.map((item, idx) => (

@@ -110,7 +110,7 @@ function KioskView() {
       setTimeout(resetKiosk, 5000);
     } catch (error) {
       console.error('Error submitting order:', error);
-      alert('Failed to submit order. Please try again.');
+      alert(error.message || 'Failed to submit order. Please try again.');
     }
   };
 

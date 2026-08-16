@@ -194,7 +194,8 @@ function MenuManagement() {
       const catItems = prev.filter(i => (i.category || 'Uncategorized') === categoryName);
       const others = prev.filter(i => (i.category || 'Uncategorized') !== categoryName);
       const reordered = arrayMove(catItems, catItems.findIndex(i => i.id === active.id), catItems.findIndex(i => i.id === over.id));
-      menuAPI.reorder(reordered.map((item, idx) => ({ id: item.id, sort_order: idx })));
+      menuAPI.reorder(reordered.map((item, idx) => ({ id: item.id, sort_order: idx })))
+        .catch(error => console.error('Error saving item order:', error));
       return [...others, ...reordered];
     });
   };
@@ -205,7 +206,8 @@ function MenuManagement() {
 
     setCategories(prev => {
       const reordered = arrayMove(prev, prev.findIndex(c => c.id === active.id), prev.findIndex(c => c.id === over.id));
-      menuAPI.reorderCategories(reordered.map((cat, idx) => ({ id: cat.id, sort_order: idx })));
+      menuAPI.reorderCategories(reordered.map((cat, idx) => ({ id: cat.id, sort_order: idx })))
+        .catch(error => console.error('Error saving category order:', error));
       return reordered;
     });
   };

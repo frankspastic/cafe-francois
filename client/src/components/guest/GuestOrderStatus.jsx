@@ -1,13 +1,18 @@
 function GuestOrderStatus({ order, onNewOrder }) {
   const getStatusDisplay = () => {
     switch (order.status) {
-      case 'pending':
+      case 'pending': {
+        const ahead = order.queue_position;
+        let message = 'Your order is in the queue';
+        if (ahead === 0) message = "You're next up";
+        else if (ahead > 0) message = `${ahead} order${ahead === 1 ? '' : 's'} ahead of you`;
         return {
           icon: '⏳',
           title: 'Order Received',
-          message: 'Your order is in the queue',
+          message,
           color: 'bg-yellow-500'
         };
+      }
       case 'in-progress':
         return {
           icon: '☕',
@@ -21,6 +26,13 @@ function GuestOrderStatus({ order, onNewOrder }) {
           title: 'Order Ready!',
           message: 'Your coffee is ready for pickup',
           color: 'bg-green-500'
+        };
+      case 'cancelled':
+        return {
+          icon: '🚫',
+          title: 'Order Cancelled',
+          message: 'Please check with the barista',
+          color: 'bg-red-500'
         };
       default:
         return {
@@ -60,6 +72,9 @@ function GuestOrderStatus({ order, onNewOrder }) {
           <h2 className="text-3xl font-bold text-gray-800 mb-2">{status.title}</h2>
           <p className="text-xl text-gray-600 mb-4">{status.message}</p>
           <p className="text-lg text-gray-500">Order for: <span className="font-semibold">{order.customer_name}</span></p>
+          {order.daily_number && (
+            <p className="text-sm text-gray-400 mt-1">Order #{order.daily_number}</p>
+          )}
         </div>
 
         {/* Order Items */}
@@ -77,8 +92,8 @@ function GuestOrderStatus({ order, onNewOrder }) {
           </div>
         </div>
 
-        {/* New Order Button (only show when completed) */}
-        {order.status === 'completed' && (
+        {/* New Order Button (once the order is done with, either way) */}
+        {(order.status === 'completed' || order.status === 'cancelled') && (
           <button
             onClick={onNewOrder}
             className="w-full bg-primary text-white px-6 py-4 rounded-xl text-lg font-semibold hover:bg-secondary transition-all"

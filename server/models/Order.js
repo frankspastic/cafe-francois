@@ -1,4 +1,43 @@
 import db from '../db/database.js';
+import { debug } from '../logger.js';
+
+const ARCHIVED_STATUSES = ['completed', 'cancelled'];
+
+// SQLite's CURRENT_TIMESTAMP stores UTC without a timezone marker, which
+// JavaScript then parses as local time. Write an explicit ISO-8601 UTC string
+// instead so the client and the label printer read it back correctly.
+function nowIso() {
+  return new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+}
+
+// Attaches items to a list of orders using one query instead of one per order.
+function withItems(orders) {
+  if (orders.length === 0) return [];
+
+  const placeholders = orders.map(() => '?').join(',');
+  const rows = db.prepare(`
+    SELECT
+      oi.id,
+      oi.order_id,
+      oi.customizations,
+      mi.name as menu_item_name,
+      mi.description as menu_item_description,
+      mi.image_url as menu_item_image_url
+    FROM order_items oi
+    JOIN menu_items mi ON oi.menu_item_id = mi.id
+    WHERE oi.order_id IN (${placeholders})
+  `).all(...orders.map(o => o.id));
+
+  const byOrderId = new Map();
+  for (const row of rows) {
+    const { order_id, ...item } = row;
+    item.customizations = item.customizations ? JSON.parse(item.customizations) : {};
+    if (!byOrderId.has(order_id)) byOrderId.set(order_id, []);
+    byOrderId.get(order_id).push(item);
+  }
+
+  return orders.map(order => ({ ...order, items: byOrderId.get(order.id) || [] }));
+}
 
 export const Order = {
   // Get all orders with optional status filter
@@ -13,22 +52,25 @@ export const Order = {
     return db.prepare('SELECT * FROM orders ORDER BY created_at DESC').all();
   },
 
-  // Get active orders (pending and in-progress)
+  // Get active orders (pending and in-progress), with items attached
   getActive() {
-    return db.prepare(`
+    const orders = db.prepare(`
       SELECT * FROM orders
       WHERE status IN ('pending', 'in-progress')
       ORDER BY created_at ASC
     `).all();
+    return withItems(orders);
   },
 
-  // Get archived orders (completed)
+  // Get archived orders. Cancelled orders belong here too — otherwise they
+  // vanish from the board with no record that they ever existed.
   getArchived() {
-    return db.prepare(`
+    const orders = db.prepare(`
       SELECT * FROM orders
-      WHERE status = 'completed'
-      ORDER BY completed_at DESC
+      WHERE status IN ('completed', 'cancelled')
+      ORDER BY COALESCE(completed_at, created_at) DESC
     `).all();
+    return withItems(orders);
   },
 
   // Get order by ID with items
@@ -36,88 +78,66 @@ export const Order = {
     try {
       const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(id);
       if (!order) {
-        console.log(`Order ${id} not found`);
+        debug(`Order ${id} not found`);
         return null;
       }
-
-      const items = db.prepare(`
-        SELECT
-          oi.id,
-          oi.customizations,
-          mi.name as menu_item_name,
-          mi.description as menu_item_description
-        FROM order_items oi
-        JOIN menu_items mi ON oi.menu_item_id = mi.id
-        WHERE oi.order_id = ?
-      `).all(id);
-
-      console.log(`Order ${id} has ${items ? items.length : 0} items:`, items);
-
-      // Parse customizations JSON
-      order.items = items ? items.map(item => ({
-        ...item,
-        customizations: item.customizations ? JSON.parse(item.customizations) : {}
-      })) : [];
-
-      console.log('Returning order:', JSON.stringify(order, null, 2));
-      return order;
+      return withItems([order])[0];
     } catch (error) {
       console.error('Error in Order.getById:', error);
       throw error;
     }
   },
 
+  // How many orders are still ahead of this one in the queue.
+  getQueuePosition(id) {
+    const row = db.prepare(`
+      SELECT COUNT(*) as ahead FROM orders
+      WHERE status IN ('pending', 'in-progress') AND id < ?
+    `).get(id);
+    return row ? row.ahead : 0;
+  },
+
   // Create new order
   create(orderData) {
     const { customer_name, items } = orderData;
+    const createdAt = nowIso();
 
-    console.log('[Order.create] Creating order for:', customer_name);
-    console.log('[Order.create] Items to insert:', JSON.stringify(items, null, 2));
+    // Order numbers restart each day, so guests see "#3" instead of "#1247".
+    const dailyRow = db.prepare(
+      "SELECT COUNT(*) as count FROM orders WHERE DATE(created_at) = DATE(?)"
+    ).get(createdAt);
+    const dailyNumber = (dailyRow?.count || 0) + 1;
 
-    // Insert order
     const orderResult = db.prepare(
-      'INSERT INTO orders (customer_name, status) VALUES (?, ?)'
-    ).run(customer_name, 'pending');
+      'INSERT INTO orders (customer_name, status, created_at, daily_number) VALUES (?, ?, ?, ?)'
+    ).run(customer_name, 'pending', createdAt, dailyNumber);
 
     const orderId = orderResult.lastInsertRowid;
-    console.log('[Order.create] Created order with ID:', orderId);
 
-    // Insert order items
-    items.forEach((item, index) => {
-      console.log(`[Order.create] Inserting item ${index + 1}:`, {
-        order_id: orderId,
-        menu_item_id: item.menu_item_id,
-        customizations: item.customizations
-      });
-
-      const result = db.prepare(
+    items.forEach((item) => {
+      db.prepare(
         'INSERT INTO order_items (order_id, menu_item_id, customizations) VALUES (?, ?, ?)'
       ).run(
         orderId,
         item.menu_item_id,
         JSON.stringify(item.customizations || {})
       );
-
-      console.log(`[Order.create] Item ${index + 1} inserted with ID:`, result.lastInsertRowid);
     });
 
-    console.log('[Order.create] All items inserted for order:', orderId);
+    debug('[Order.create] Created order', orderId, 'with', items.length, 'item(s)');
     return orderId;
   },
 
   // Update order status
   updateStatus(id, status) {
-    const updates = { status };
-
-    // If completing the order, set completed_at timestamp
-    if (status === 'completed') {
+    if (ARCHIVED_STATUSES.includes(status)) {
       return db.prepare(
-        'UPDATE orders SET status = ?, completed_at = CURRENT_TIMESTAMP WHERE id = ?'
-      ).run(status, id);
+        'UPDATE orders SET status = ?, completed_at = ? WHERE id = ?'
+      ).run(status, nowIso(), id);
     }
 
     return db.prepare(
-      'UPDATE orders SET status = ? WHERE id = ?'
+      'UPDATE orders SET status = ?, completed_at = NULL WHERE id = ?'
     ).run(status, id);
   },
 

@@ -1,105 +1,100 @@
 const API_BASE = '/api';
+const TOKEN_KEY = 'cafe-francois-barista-token';
 
-// Menu API
+// ---------------------------------------------------------------------------
+// Barista session token
+// ---------------------------------------------------------------------------
+
+export function getToken() {
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null; // Safari private mode
+  }
+}
+
+export function setToken(token) {
+  try {
+    if (token) localStorage.setItem(TOKEN_KEY, token);
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    // Ignore — the session just won't survive a reload.
+  }
+}
+
+// Notifies the app when the server rejects our token, so the dashboard can drop
+// back to the PIN screen instead of silently failing every request.
+let onUnauthorized = null;
+export function setUnauthorizedHandler(handler) {
+  onUnauthorized = handler;
+}
+
+async function request(path, { method = 'GET', body, auth = false } = {}) {
+  const headers = {};
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  if (auth) {
+    const token = getToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE}${path}`, {
+    method,
+    headers,
+    body: body === undefined ? undefined : JSON.stringify(body)
+  });
+
+  if (response.status === 401 && auth) {
+    setToken(null);
+    if (onUnauthorized) onUnauthorized();
+    throw new Error('Your session expired. Please enter the PIN again.');
+  }
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(data?.error || `Request failed (${response.status})`);
+  }
+
+  return data;
+}
+
+// ---------------------------------------------------------------------------
+// Menu
+// ---------------------------------------------------------------------------
+
 export const menuAPI = {
-  async getAll() {
-    const response = await fetch(`${API_BASE}/menu`);
-    return response.json();
-  },
+  getAll: () => request('/menu'),
+  getAllAdmin: () => request('/menu?admin=true', { auth: true }),
+  getCustomizations: () => request('/menu/customizations'),
+  getCategories: () => request('/menu/categories'),
 
-  async getAllAdmin() {
-    const response = await fetch(`${API_BASE}/menu?admin=true`);
-    return response.json();
-  },
+  create: (item) => request('/menu', { method: 'POST', body: item, auth: true }),
+  update: (id, item) => request(`/menu/${id}`, { method: 'PUT', body: item, auth: true }),
+  delete: (id) => request(`/menu/${id}`, { method: 'DELETE', auth: true }),
 
-  async getCustomizations() {
-    const response = await fetch(`${API_BASE}/menu/customizations`);
-    return response.json();
-  },
+  createCustomization: (type, name) =>
+    request('/menu/customizations', { method: 'POST', body: { type, name }, auth: true }),
+  deleteCustomization: (id) =>
+    request(`/menu/customizations/${id}`, { method: 'DELETE', auth: true }),
 
-  async create(item) {
-    const response = await fetch(`${API_BASE}/menu`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(item)
-    });
-    return response.json();
-  },
-
-  async update(id, item) {
-    const response = await fetch(`${API_BASE}/menu/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(item)
-    });
-    return response.json();
-  },
-
-  async delete(id) {
-    const response = await fetch(`${API_BASE}/menu/${id}`, {
-      method: 'DELETE'
-    });
-    return response.json();
-  },
-
-  async createCustomization(type, name) {
-    const response = await fetch(`${API_BASE}/menu/customizations`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type, name })
-    });
-    return response.json();
-  },
-
-  async deleteCustomization(id) {
-    const response = await fetch(`${API_BASE}/menu/customizations/${id}`, {
-      method: 'DELETE'
-    });
-    return response.json();
-  },
-
-  async reorder(items) {
-    const response = await fetch(`${API_BASE}/menu/reorder`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ items })
-    });
-    return response.json();
-  },
-
-  async getCategories() {
-    const response = await fetch(`${API_BASE}/menu/categories`);
-    return response.json();
-  },
-
-  async reorderCategories(items) {
-    const response = await fetch(`${API_BASE}/menu/categories/reorder`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ items })
-    });
-    return response.json();
-  }
+  reorder: (items) => request('/menu/reorder', { method: 'PATCH', body: { items }, auth: true }),
+  reorderCategories: (items) =>
+    request('/menu/categories/reorder', { method: 'PATCH', body: { items }, auth: true })
 };
 
-// Settings API
+// ---------------------------------------------------------------------------
+// Settings
+// ---------------------------------------------------------------------------
+
 export const settingsAPI = {
-  async getAll() {
-    const response = await fetch(`${API_BASE}/settings`);
-    return response.json();
-  },
-
-  async set(key, value) {
-    const response = await fetch(`${API_BASE}/settings/${key}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ value })
-    });
-    return response.json();
-  }
+  getAll: () => request('/settings'),
+  set: (key, value) => request(`/settings/${key}`, { method: 'PUT', body: { value }, auth: true })
 };
 
-// Barista PIN API
+// ---------------------------------------------------------------------------
+// Barista authentication
+// ---------------------------------------------------------------------------
+
 export const baristaAPI = {
   async verifyPin(pin) {
     const response = await fetch(`${API_BASE}/settings/barista-pin/verify`, {
@@ -107,55 +102,62 @@ export const baristaAPI = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pin })
     });
-    return response.json();
+    const data = await response.json().catch(() => ({}));
+
+    if (response.status === 429) {
+      return { valid: false, lockedOut: true, message: data.error };
+    }
+    if (data.valid && data.token) {
+      setToken(data.token);
+      return { valid: true };
+    }
+    return { valid: false };
+  },
+
+  // Confirms a stored token still works, so a reload doesn't force the PIN again.
+  async restoreSession() {
+    if (!getToken()) return false;
+    try {
+      await request('/settings/barista-pin/session', { auth: true });
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  async logout() {
+    try {
+      await request('/settings/barista-pin/logout', { method: 'POST', auth: true });
+    } catch {
+      // Even if the server call fails, drop the local token.
+    }
+    setToken(null);
   },
 
   async changePin(currentPin, newPin) {
-    const response = await fetch(`${API_BASE}/settings/barista-pin`, {
+    const data = await request('/settings/barista-pin', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ currentPin, newPin })
+      body: { currentPin, newPin },
+      auth: true
     });
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error || 'Failed to change PIN');
-    }
+    // Changing the PIN invalidates every session, including this one.
+    if (data?.token) setToken(data.token);
     return data;
-  }
+  },
+
+  backupUrl: () => `${API_BASE}/settings/backup?token=${encodeURIComponent(getToken() || '')}`
 };
 
-// Orders API
+// ---------------------------------------------------------------------------
+// Orders
+// ---------------------------------------------------------------------------
+
 export const ordersAPI = {
-  async getActive() {
-    const response = await fetch(`${API_BASE}/orders`);
-    return response.json();
-  },
-
-  async getArchived() {
-    const response = await fetch(`${API_BASE}/orders/archived`);
-    return response.json();
-  },
-
-  async getById(id) {
-    const response = await fetch(`${API_BASE}/orders/${id}`);
-    return response.json();
-  },
-
-  async create(order) {
-    const response = await fetch(`${API_BASE}/orders`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(order)
-    });
-    return response.json();
-  },
-
-  async updateStatus(id, status) {
-    const response = await fetch(`${API_BASE}/orders/${id}/status`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status })
-    });
-    return response.json();
-  }
+  getActive: () => request('/orders', { auth: true }),
+  getArchived: () => request('/orders/archived', { auth: true }),
+  getById: (id) => request(`/orders/${id}`),
+  create: (order) => request('/orders', { method: 'POST', body: order }),
+  updateStatus: (id, status) =>
+    request(`/orders/${id}/status`, { method: 'PATCH', body: { status }, auth: true }),
+  reprint: (id) => request(`/orders/${id}/print`, { method: 'POST', auth: true })
 };

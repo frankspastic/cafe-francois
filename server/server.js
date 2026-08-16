@@ -8,24 +8,45 @@ import { initializeDatabase, seedDatabase } from './db/database.js';
 import menuRoutes from './routes/menu.js';
 import orderRoutes from './routes/orders.js';
 import settingsRoutes from './routes/settings.js';
+import { isValidSession } from './auth.js';
+import { debug } from './logger.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const clientDist = path.join(__dirname, '../client/dist');
+
+// In production the client is served from this same origin, so cross-origin
+// requests only need to be allowed for the local Vite dev server. Set
+// ALLOWED_ORIGINS (comma separated) to permit others.
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean)
+  : ['http://localhost:5173'];
+
+const corsOptions = {
+  origin(origin, callback) {
+    // Same-origin and non-browser clients send no Origin header.
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error('Not allowed by CORS'));
+  }
+};
 
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: '*',
+    ...corsOptions,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE']
   }
 });
 
 const PORT = process.env.PORT || 3000;
 
+// Railway terminates TLS upstream, so trust its proxy headers to get the real
+// client IP for PIN rate limiting.
+app.set('trust proxy', 1);
+
 // Middleware
-app.use(cors());
-app.use(express.json());
+app.use(cors(corsOptions));
+app.use(express.json({ limit: '100kb' }));
 
 // Make io accessible to routes
 app.use((req, res, next) => {
@@ -55,12 +76,30 @@ async function startServer() {
       res.sendFile(path.join(clientDist, 'index.html'));
     });
 
-    // WebSocket connection handling
+    // WebSocket connection handling.
+    //
+    // Order events carry guest names and drinks, so nothing is broadcast to every
+    // socket. Baristas authenticate into the 'barista' room; guests subscribe only
+    // to the order they just placed.
     io.on('connection', (socket) => {
-      console.log('Client connected:', socket.id);
+      debug('Client connected:', socket.id);
+
+      socket.on('barista:join', (token, ack) => {
+        if (!isValidSession(token)) {
+          if (typeof ack === 'function') ack({ ok: false });
+          return;
+        }
+        socket.join('barista');
+        if (typeof ack === 'function') ack({ ok: true });
+      });
+
+      socket.on('order:subscribe', (orderId) => {
+        const id = Number(orderId);
+        if (Number.isInteger(id) && id > 0) socket.join(`order:${id}`);
+      });
 
       socket.on('disconnect', () => {
-        console.log('Client disconnected:', socket.id);
+        debug('Client disconnected:', socket.id);
       });
     });
 
