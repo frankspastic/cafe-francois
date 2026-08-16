@@ -145,7 +145,27 @@ export const baristaAPI = {
     return data;
   },
 
-  backupUrl: () => `${API_BASE}/settings/backup?token=${encodeURIComponent(getToken() || '')}`
+  backupUrl: () => `${API_BASE}/settings/backup?token=${encodeURIComponent(getToken() || '')}`,
+
+  // Uploads a .db file to replace the live database — e.g. moving a dev
+  // database to production. The server invalidates every session (including
+  // this one) once it's done, since the uploaded file has its own PIN hash.
+  async restore(file) {
+    const response = await fetch(`${API_BASE}/settings/restore`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/octet-stream',
+        Authorization: `Bearer ${getToken() || ''}`
+      },
+      body: file
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.error || `Restore failed (${response.status})`);
+    }
+    setToken(null);
+    return data;
+  }
 };
 
 // ---------------------------------------------------------------------------

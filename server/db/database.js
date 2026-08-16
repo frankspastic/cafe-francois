@@ -2,7 +2,7 @@ import initSqlJs from 'sql.js';
 import bcrypt from 'bcryptjs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { readFileSync, writeFileSync, existsSync, renameSync, mkdirSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, renameSync, mkdirSync, copyFileSync } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -256,13 +256,51 @@ export function exportDatabase() {
   return Buffer.from(db.export());
 }
 
+const SQLITE_HEADER = 'SQLite format 3 ';
+
+// Replace the live database with an uploaded file — e.g. moving a dev database
+// to production. Keeps a dated copy of whatever it overwrites, then reuses
+// initializeDatabase()'s CREATE-TABLE-IF-NOT-EXISTS / ALTER-TABLE migrations so
+// an older dev database is brought up to the current schema on the way in.
+export async function restoreDatabase(buffer) {
+  if (buffer.length < 16 || buffer.toString('utf8', 0, 16) !== SQLITE_HEADER) {
+    throw new Error('That file does not look like a SQLite database');
+  }
+
+  if (existsSync(dbPath)) {
+    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+    copyFileSync(dbPath, `${dbPath}.pre-restore-${stamp}.bak`);
+  }
+
+  const tempPath = `${dbPath}.tmp`;
+  writeFileSync(tempPath, buffer);
+  renameSync(tempPath, dbPath);
+
+  await initializeDatabase();
+  seedDatabase();
+}
+
+// sql.js throws plain strings/objects for bind errors rather than real Error
+// instances. Left alone, `error.message` on those is undefined, and since
+// JSON.stringify drops undefined values, every route's `res.json({ error:
+// error.message })` silently sends back `{}` — a 500 with an empty body and
+// no clue why. Normalize whatever sql.js throws into a real Error up front.
+function bindParams(stmt, params) {
+  try {
+    stmt.bind(params);
+  } catch (err) {
+    stmt.free();
+    throw err instanceof Error ? err : new Error(String(err?.message || err));
+  }
+}
+
 // Helper functions for prepared statements
 export function prepare(sql) {
   return {
     run: (...params) => {
       const stmt = db.prepare(sql);
       if (params.length > 0) {
-        stmt.bind(params);
+        bindParams(stmt, params);
       }
       stmt.step();
       stmt.free();
@@ -275,7 +313,7 @@ export function prepare(sql) {
     get: (...params) => {
       const stmt = db.prepare(sql);
       if (params.length > 0) {
-        stmt.bind(params);
+        bindParams(stmt, params);
       }
       const hasRow = stmt.step();
 
@@ -297,7 +335,7 @@ export function prepare(sql) {
     all: (...params) => {
       const stmt = db.prepare(sql);
       if (params.length > 0) {
-        stmt.bind(params);
+        bindParams(stmt, params);
       }
 
       const rows = [];

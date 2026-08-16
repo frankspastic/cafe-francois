@@ -11,6 +11,9 @@ function AppearanceSettings() {
   const [pinError, setPinError] = useState('');
   const [pinSaved, setPinSaved] = useState(false);
 
+  const [restoreError, setRestoreError] = useState('');
+  const [isRestoring, setIsRestoring] = useState(false);
+
   useEffect(() => {
     settingsAPI.getAll().then(s => {
       if (s.background_image_url) setBgUrl(s.background_image_url);
@@ -45,6 +48,33 @@ function AppearanceSettings() {
       setTimeout(() => setPinSaved(false), 2000);
     } catch (error) {
       setPinError(error.message);
+    }
+  };
+
+  const handleRestoreFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow picking the same file again later
+    if (!file) return;
+
+    const confirmed = window.confirm(
+      `Restore the database from "${file.name}"?\n\n` +
+      'This completely replaces the current menu, settings, and order history ' +
+      'with what\'s in that file. A dated backup of what\'s here now is kept on ' +
+      'the server first, but this cannot be undone from this screen.'
+    );
+    if (!confirmed) return;
+
+    setRestoreError('');
+    setIsRestoring(true);
+    try {
+      await baristaAPI.restore(file);
+      // The server invalidated every session (the uploaded file has its own PIN
+      // hash), so reload straight into the PIN screen rather than leaving a
+      // dashboard that's about to 401 on its next request.
+      window.location.reload();
+    } catch (error) {
+      setRestoreError(error.message);
+      setIsRestoring(false);
     }
   };
 
@@ -155,6 +185,26 @@ function AppearanceSettings() {
         >
           Download backup
         </a>
+      </div>
+
+      <div className="bg-stone-900 border border-red-900/40 rounded-xl p-8 max-w-2xl mt-8">
+        <h3 className="text-lg font-bold text-stone-200 mb-1">Restore</h3>
+        <p className="text-sm text-stone-500 mb-4">
+          Upload a <code className="text-stone-400">.db</code> file to replace everything here —
+          menu, settings, and order history. Use this to move a database from another
+          environment (e.g. your local dev setup) onto this deployment.
+        </p>
+        <label className="inline-block bg-red-900/30 text-red-300 px-6 py-2.5 rounded-lg font-semibold hover:bg-red-900/50 transition-all cursor-pointer">
+          {isRestoring ? 'Restoring…' : 'Upload database file'}
+          <input
+            type="file"
+            accept=".db"
+            onChange={handleRestoreFile}
+            disabled={isRestoring}
+            className="hidden"
+          />
+        </label>
+        {restoreError && <p className="text-red-400 text-sm font-semibold mt-3">{restoreError}</p>}
       </div>
     </div>
   );

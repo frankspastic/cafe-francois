@@ -59,9 +59,11 @@ export const Menu = {
     const { name, description, image_url, allowed_customization_types, category } = item;
     const cat = category || 'Coffee';
     Menu.ensureCategory(cat);
+    // sql.js's bind() throws (with a non-Error value, so the message is lost)
+    // on `undefined` — only `null` is accepted for an absent value.
     const result = db.prepare(
       'INSERT INTO menu_items (name, description, image_url, allowed_customization_types, category) VALUES (?, ?, ?, ?, ?)'
-    ).run(name, description, image_url, JSON.stringify(allowed_customization_types || DEFAULT_TYPES), cat);
+    ).run(name, description ?? null, image_url ?? null, JSON.stringify(allowed_customization_types || DEFAULT_TYPES), cat);
     return result.lastInsertRowid;
   },
 
@@ -72,7 +74,7 @@ export const Menu = {
     Menu.ensureCategory(cat);
     return db.prepare(
       'UPDATE menu_items SET name = ?, description = ?, image_url = ?, available = ?, allowed_customization_types = ?, category = ? WHERE id = ?'
-    ).run(name, description, image_url, available, JSON.stringify(allowed_customization_types || DEFAULT_TYPES), cat, id);
+    ).run(name, description ?? null, image_url ?? null, available ?? 1, JSON.stringify(allowed_customization_types || DEFAULT_TYPES), cat, id);
   },
 
   // Delete menu item (soft delete)

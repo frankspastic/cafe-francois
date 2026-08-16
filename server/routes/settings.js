@@ -1,6 +1,6 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
-import db, { exportDatabase } from '../db/database.js';
+import db, { exportDatabase, restoreDatabase } from '../db/database.js';
 import {
   createSession,
   destroySession,
@@ -112,6 +112,24 @@ router.get('/backup', (req, res) => {
     res.send(exportDatabase());
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Upload a database file to replace the live one — the other half of /backup,
+// used to move a dev database to production. requireBarista runs before the
+// raw-body parser so an unauthenticated caller can't push arbitrary bytes at all.
+router.post('/restore', requireBarista, express.raw({ type: 'application/octet-stream', limit: '200mb' }), async (req, res) => {
+  try {
+    if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+    await restoreDatabase(req.body);
+    // The uploaded database has its own barista_pin_hash, so every existing
+    // session (including this one) needs to reauthenticate against it.
+    destroyAllSessions();
+    res.json({ success: true });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
   }
 });
 
