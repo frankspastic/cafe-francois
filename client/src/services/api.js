@@ -99,6 +99,31 @@ export const settingsAPI = {
   }
 };
 
+// Barista PIN API
+export const baristaAPI = {
+  async verifyPin(pin) {
+    const response = await fetch(`${API_BASE}/settings/barista-pin/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin })
+    });
+    return response.json();
+  },
+
+  async changePin(currentPin, newPin) {
+    const response = await fetch(`${API_BASE}/settings/barista-pin`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentPin, newPin })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to change PIN');
+    }
+    return data;
+  }
+};
+
 // Orders API
 export const ordersAPI = {
   async getActive() {

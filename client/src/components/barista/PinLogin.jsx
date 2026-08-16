@@ -10,8 +10,8 @@ function PinLogin({ onLogin }) {
       setPin(newPin);
       setError('');
       if (newPin.length === 4) {
-        setTimeout(() => {
-          const success = onLogin(newPin);
+        setTimeout(async () => {
+          const success = await onLogin(newPin);
           if (!success) {
             setError('Invalid PIN');
             setPin('');

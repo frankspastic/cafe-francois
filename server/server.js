@@ -2,10 +2,15 @@ import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { initializeDatabase, seedDatabase } from './db/database.js';
 import menuRoutes from './routes/menu.js';
 import orderRoutes from './routes/orders.js';
 import settingsRoutes from './routes/settings.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const clientDist = path.join(__dirname, '../client/dist');
 
 const app = express();
 const httpServer = createServer(app);
@@ -42,6 +47,12 @@ async function startServer() {
     // Health check
     app.get('/api/health', (req, res) => {
       res.json({ status: 'ok', timestamp: new Date().toISOString() });
+    });
+
+    // Serve the built client (production)
+    app.use(express.static(clientDist));
+    app.get(/^\/(?!api).*/, (req, res) => {
+      res.sendFile(path.join(clientDist, 'index.html'));
     });
 
     // WebSocket connection handling

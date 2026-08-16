@@ -5,7 +5,7 @@ import MenuManagement from '../components/barista/MenuManagement';
 import ArchivedOrders from '../components/barista/ArchivedOrders';
 import QRCodeDisplay from '../components/barista/QRCodeDisplay';
 import AppearanceSettings from '../components/barista/AppearanceSettings';
-import { ordersAPI } from '../services/api';
+import { ordersAPI, baristaAPI } from '../services/api';
 import socketService from '../services/socket';
 import { useWakeLock } from '../hooks/useWakeLock';
 
@@ -16,9 +16,6 @@ const TABS = {
   QR: 'qr',
   APPEARANCE: 'appearance'
 };
-
-// Simple PIN - in production, this would be env variable or in database
-const BARISTA_PIN = '1234';
 
 function BaristaView() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -123,12 +120,18 @@ function BaristaView() {
     };
   }, [isAuthenticated, activeTab]);
 
-  const handleLogin = (pin) => {
-    if (pin === BARISTA_PIN) {
-      setIsAuthenticated(true);
-      return true;
+  const handleLogin = async (pin) => {
+    try {
+      const { valid } = await baristaAPI.verifyPin(pin);
+      if (valid) {
+        setIsAuthenticated(true);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error verifying PIN:', error);
+      return false;
     }
-    return false;
   };
 
   const handleUpdateStatus = async (orderId, newStatus) => {

@@ -1,6 +1,7 @@
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = 'http://localhost:3000';
+// In dev, Vite proxies to the local server; in prod, client and server share an origin.
+const SOCKET_URL = import.meta.env.DEV ? 'http://localhost:3000' : window.location.origin;
 
 class SocketService {
   constructor() {

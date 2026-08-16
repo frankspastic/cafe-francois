@@ -1,4 +1,5 @@
 import initSqlJs from 'sql.js';
+import bcrypt from 'bcryptjs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
@@ -7,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 let db = null;
-const dbPath = join(__dirname, 'cafe-francois.db');
+const dbPath = process.env.DB_PATH || join(__dirname, 'cafe-francois.db');
 
 // Initialize SQL.js and database
 export async function initializeDatabase() {
@@ -94,6 +95,22 @@ export async function initializeDatabase() {
       value TEXT
     )
   `);
+
+  // Seed the barista PIN hash on first run (BARISTA_PIN is only used as the initial value —
+  // after that, the PIN lives in this table and is changed from the Barista dashboard).
+  const pinRow = db.exec("SELECT value FROM settings WHERE key = 'barista_pin_hash'");
+  if (!pinRow.length || !pinRow[0].values.length) {
+    const initialPin = process.env.BARISTA_PIN || '1234';
+    db.run('INSERT INTO settings (key, value) VALUES (?, ?)', ['barista_pin_hash', bcrypt.hashSync(initialPin, 10)]);
+  }
+
+  // Forgot-PIN recovery: set RESET_BARISTA_PIN and restart the server to force the PIN back to
+  // a known value, then remove the env var again so it can't be used to reset it a second time.
+  if (process.env.RESET_BARISTA_PIN) {
+    const resetPin = process.env.RESET_BARISTA_PIN;
+    db.run('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', ['barista_pin_hash', bcrypt.hashSync(resetPin, 10)]);
+    console.warn('[Database] Barista PIN was reset via RESET_BARISTA_PIN. Remove that env var now that the reset has applied.');
+  }
 
   // Migration: add categories table for category ordering
   db.run(`
